@@ -1,0 +1,6 @@
+.idea/
+__pycache__/
+*.xlsx
+*.doc
+*.docx
+workdir*

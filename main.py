@@ -1,0 +1,230 @@
+import os
+import re
+import sys
+from configparser import ConfigParser
+from docx import Document
+from openpyxl import load_workbook
+from colorama import init, Fore
+
+
+class Company(object):
+    _name = ''
+
+
+def replace_header(doc, com):
+    header = doc.sections[0].header
+    para = header.paragraphs[0]
+    for i in range(len(para.runs)):
+        if para.runs[i].text == "公司页眉":
+            print("公司页眉" + "-->" + com.file_sum)
+            para.runs[i].text = com.file_sum
+
+    return doc
+
+
+def check_and_change(doc, replace):
+    """
+    遍历word中的所有 paragraphs，在每一段中发现含有key 的内容，就替换为 value 。
+    （key 和 value 都是replace_dict中的键值对。）
+    """
+    for para in doc.paragraphs:
+        for i in range(len(para.runs)):
+            # print(">>>" + para.runs[i].text)
+            for key, value in replace.items():
+                if key in para.runs[i].text:
+                    print(key + "-->" + value)
+                    para.runs[i].text = para.runs[i].text.replace(key, value)
+    return doc
+
+
+def replace_tables(doc, replace):
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    for i in range(len(para.runs)):
+                        # print(">>>" + para.runs[i].text)
+                        for key, value in replace.items():
+                            if key in para.runs[i].text:
+                                print(key + "-->" + value)
+                                para.runs[i].text = para.runs[i].text.replace(key, value)
+    return doc
+
+
+def clear_runs(runs):
+    for i, run in enumerate(runs):
+        if i > 0:
+            run.clear()
+    return runs
+
+
+def debug_doc(doc):
+    for i, para in enumerate(doc.paragraphs):
+        print(f'Para.{i} : ', para.text, sep='')
+        for j, run in enumerate(para.runs):
+            print(f'Para.{i} Run{j}: ', run.text, sep='')
+    for k, table in enumerate(doc.tables):
+        for l, row in enumerate(table.rows):
+            for m, cell in enumerate(row.cells):
+                for i, para in enumerate(cell.paragraphs):
+                    print(f'Table.{k} Row.{l} Cell{m} Para.{i} : ', para.text, sep='')
+                    # for j, run in enumerate(para.runs):
+                    #     print(f'Para.{i} Run{j}: ', run.text, sep='')
+
+
+def first_table(doc):
+    if doc.tables[0].rows[0].cells[0].paragraphs[0].text == '项目名称：':
+        doc.tables[0].rows[0].cells[1].paragraphs[0].runs[0].text = p_name
+        clear_runs(doc.tables[0].rows[0].cells[1].paragraphs[0].runs)
+    if doc.tables[0].rows[1].cells[0].paragraphs[0].text == '项目编号：':
+        doc.tables[0].rows[1].cells[1].paragraphs[0].runs[0].text = p_start[0:4] + 'RD' + p_order
+        clear_runs(doc.tables[0].rows[1].cells[1].paragraphs[0].runs)
+    if doc.tables[0].rows[2].cells[0].paragraphs[0].text == '项目负责人：':
+        doc.tables[0].rows[2].cells[1].paragraphs[0].runs[0].text = p_owner
+        clear_runs(doc.tables[0].rows[2].cells[1].paragraphs[0].runs)
+    if doc.tables[0].rows[3].cells[0].paragraphs[0].text == '项目周期：':
+        doc.tables[0].rows[3].cells[1].paragraphs[0].runs[0].text = p_start + '至' + p_end
+        clear_runs(doc.tables[0].rows[3].cells[1].paragraphs[0].runs)
+    return doc
+
+
+def start_time(doc):
+    check_replace(doc.paragraphs, '申请立项时间：\d{4}[-/]\d{1,2}[-/]\d{1,2}', '申请立项时间：' + p_start)
+
+
+def second_table(doc):
+    if doc.tables[1].rows[0].cells[0].paragraphs[0].text == '项目立项名称':
+        doc.tables[1].rows[0].cells[1].paragraphs[0].runs[0].text = p_name
+        clear_runs(doc.tables[1].rows[0].cells[1].paragraphs[0].runs)
+
+    check_replace(doc.tables[1].rows[1].cells[1].paragraphs
+                  , '项目团队由(.*)人组成，项目实施周期为(.*)个月。'
+                  , '项目团队由' + p_people + '人组成，项目实施周期为' + p_cost + '个月。')
+    check_replace(doc.tables[1].rows[6].cells[1].paragraphs
+                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}', p_start + '至' + p_end)
+    check_replace(doc.tables[1].rows[7].cells[1].paragraphs
+                  , '项目总资金预算\d+万元', '项目总资金预算' + p_money + '万元')
+
+    # name_list = p_rnd.split('、')
+    # name_str = str(len(name_list) + 1)
+    check_replace(doc.tables[1].rows[8].cells[1].paragraphs
+                  , '项目总人数：\d+人', '项目总人数：' + p_people + '人')
+    check_replace(doc.tables[1].rows[8].cells[1].paragraphs
+                  , '项目负责人：.*', '项目负责人：' + p_owner)
+    check_replace(doc.tables[1].rows[8].cells[1].paragraphs
+                  , '研发成员：.*', '研发成员：' + p_rnd)
+    check_replace(doc.tables[1].rows[9].cells[1].paragraphs
+                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}', p_start)
+
+    return doc
+
+
+def check_replace(paras, regex, dst):
+    for i, para in enumerate(paras):
+        if re.search(regex, para.text) is not None:
+            para.runs[0].text = re.sub(regex, dst,
+                                       para.text)
+            clear_runs(para.runs)
+            break  # 只替换一次就够用
+
+
+def third_table(doc):
+    if doc.tables[2].rows[0].cells[0].paragraphs[0].text == '项目名称':
+        doc.tables[2].rows[0].cells[1].paragraphs[0].runs[0].text = p_name
+        clear_runs(doc.tables[1].rows[0].cells[1].paragraphs[0].runs)
+    check_replace(doc.tables[2].rows[1].cells[1].paragraphs
+                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}', p_end)
+    check_replace(doc.tables[2].rows[2].cells[1].paragraphs
+                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}', p_start + '至' + p_end)
+
+    doc.tables[2].rows[3].cells[1].paragraphs[0].runs[0].text = p_owner
+    clear_runs(doc.tables[2].rows[3].cells[1].paragraphs[0].runs)
+    return doc
+
+
+if __name__ == '__main__':
+    init(autoreset=True)
+    workdir = ''
+    workdir_change = False
+    config = ConfigParser()
+    try:
+        config.read('config.ini', encoding='UTF-8')
+        workdir = config['config']['lasting']
+    except:
+        config.add_section('config')
+        pass
+    print('上次处理文件夹: ' + Fore.RED + workdir)
+    yesno = input("直接回车继续处理。否则请输入新的路径：")
+    if yesno != '':
+        workdir_change = True
+        workdir = yesno
+        config['config']['lasting'] = yesno
+    print('开始处理文件夹: ' + workdir)
+    if not os.path.exists(workdir + '_bak'):
+        print('''
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!                                                           !!
+        !! 该文件夹的文件会被自动修改，强烈建议备份文件，否则可能存在数据丢失风险  !!
+        !!        备份文件夹以原名称加_bak扩展时不再提示该告警!              !!
+        !!                                                           !!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ''')
+    input("输入回车开始执行修改文件,或者关闭该程序")
+
+    for file_sum in os.listdir(workdir):
+        if file_sum.endswith('立项报告汇总表.xlsx') and not file_sum.startswith('~$'):
+            print(f"找到 {file_sum}, 开始处理.")
+            break
+    if not file_sum.endswith('立项报告汇总表.xlsx'):
+        print("Error: 找不到 立项报告汇总表")
+        sys.exit(-1)
+
+    wb = load_workbook(workdir + '/' + file_sum, data_only=True)
+    ws = wb.active
+    if str(ws['A1'].value).find(u'公司') != -1:
+        com_name = str(ws['A1'].value).split("公司")[0] + '公司'
+    else:
+        print("Error: 找不到 公司名")
+
+    company = Company()
+    company.name = com_name
+
+    replace_dict = dict()
+    replace_list = []  # 空列表
+    max_row_num = ws.max_row
+    rangeCell = ws[f'A3:P{max_row_num}']
+    for r in rangeCell:
+        if r[0].value is None:
+            break
+        p_order = str(r[0].value).strip().zfill(2)
+        p_name = str(r[1].value).strip()
+        p_start = r[2].value.strftime('%Y-%m-%d')
+        p_end = r[3].value.strftime('%Y-%m-%d')
+        p_cost = str(r[5].value).strip()
+        p_people = str(r[6].value).strip()  # 人数
+        p_owner = str(r[7].value).strip()  # 项目负责人
+        p_rnd = str(r[8].value).strip()  # 研发人员
+        p_money = str(r[9].value).strip()  # 总预算
+
+        document = Document(workdir + '/RD' + p_order + p_name + '.docx')
+        # debug_doc(document)
+        first_table(document)
+        start_time(document)
+        second_table(document)
+        third_table(document)
+        document.save(workdir + '/RD' + p_order + p_name + '.docx')
+
+    #         document = replace_header(document, company)
+    #         document = check_and_change(document, replace_dict)
+    #         document = replace_tables(document, replace_dict)
+    #         document.save(new_file)
+    #         print("^" * 30)
+    #     else:
+    #         print("Skip " + name + ".......")
+    # input("处理完毕，按回车键退出.")
+    if workdir_change:
+        with open('config.ini', 'w', encoding='utf-8') as file:
+            config.write(file)  # 数据写入配置文件
+    input("处理完成.")
