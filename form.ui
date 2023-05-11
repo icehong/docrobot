@@ -19,7 +19,7 @@
      <rect>
       <x>10</x>
       <y>40</y>
-      <width>631</width>
+      <width>781</width>
       <height>521</height>
      </rect>
     </property>
@@ -42,7 +42,7 @@
      <rect>
       <x>100</x>
       <y>10</y>
-      <width>541</width>
+      <width>691</width>
       <height>20</height>
      </rect>
     </property>
@@ -68,13 +68,25 @@
      <string>启动替换</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menu_3">
+    <property name="title">
+     <string>专利</string>
+    </property>
+    <addaction name="actioncheck"/>
+   </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
+   <addaction name="menu_3"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionSelect_Dir">
    <property name="text">
     <string>Select Dir</string>
+   </property>
+  </action>
+  <action name="actioncheck">
+   <property name="text">
+    <string>检查</string>
    </property>
   </action>
  </widget>

@@ -11,16 +11,6 @@ class Company(object):
     _name = ''
 
 
-def replace_header(doc, com):
-    header = doc.sections[0].header
-    para = header.paragraphs[0]
-    for i in range(len(para.runs)):
-        if para.runs[i].text == "公司页眉":
-            print("公司页眉" + "-->" + com.file_sum)
-            para.runs[i].text = com.file_sum
-
-    return doc
-
 
 def check_and_change(doc, replace):
     """
@@ -70,6 +60,10 @@ def debug_doc(doc):
                     print(f'Table.{k} Row.{l} Cell{m} Para.{i} : ', para.text, sep='')
                     # for j, run in enumerate(para.runs):
                     #     print(f'Para.{i} Run{j}: ', run.text, sep='')
+
+
+def replace_header(doc):
+    check_replace(doc.sections[0].header.paragraphs, '.*公司', com_name)
 
 
 def first_table(doc):
@@ -188,9 +182,6 @@ if __name__ == '__main__':
     else:
         print("Error: 找不到 公司名")
 
-    company = Company()
-    company.name = com_name
-
     replace_dict = dict()
     replace_list = []  # 空列表
     max_row_num = ws.max_row
@@ -210,6 +201,8 @@ if __name__ == '__main__':
 
         document = Document(workdir + '/RD' + p_order + p_name + '.docx')
         # debug_doc(document)
+        # TODO to be fixed
+        # replace_header(document)
         first_table(document)
         start_time(document)
         second_table(document)
@@ -226,5 +219,6 @@ if __name__ == '__main__':
     # input("处理完毕，按回车键退出.")
     if workdir_change:
         with open('config.ini', 'w', encoding='utf-8') as file:
+            config = ConfigParser()
             config.write(file)  # 数据写入配置文件
     input("处理完成.")

@@ -27,17 +27,19 @@ class Ui_MainWindow(object):
         MainWindow.resize(800, 600)
         self.actionSelect_Dir = QAction(MainWindow)
         self.actionSelect_Dir.setObjectName(u"actionSelect_Dir")
+        self.actioncheck = QAction(MainWindow)
+        self.actioncheck.setObjectName(u"actioncheck")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.textEdit = QTextEdit(self.centralwidget)
         self.textEdit.setObjectName(u"textEdit")
-        self.textEdit.setGeometry(QRect(10, 40, 631, 521))
+        self.textEdit.setGeometry(QRect(10, 40, 781, 521))
         self.label = QLabel(self.centralwidget)
         self.label.setObjectName(u"label")
         self.label.setGeometry(QRect(10, 10, 91, 16))
         self.lineEdit = QLineEdit(self.centralwidget)
         self.lineEdit.setObjectName(u"lineEdit")
-        self.lineEdit.setGeometry(QRect(100, 10, 541, 20))
+        self.lineEdit.setGeometry(QRect(100, 10, 691, 20))
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
@@ -46,6 +48,8 @@ class Ui_MainWindow(object):
         self.menu.setObjectName(u"menu")
         self.menu_2 = QMenu(self.menubar)
         self.menu_2.setObjectName(u"menu_2")
+        self.menu_3 = QMenu(self.menubar)
+        self.menu_3.setObjectName(u"menu_3")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -53,7 +57,9 @@ class Ui_MainWindow(object):
 
         self.menubar.addAction(self.menu.menuAction())
         self.menubar.addAction(self.menu_2.menuAction())
+        self.menubar.addAction(self.menu_3.menuAction())
         self.menu.addAction(self.actionSelect_Dir)
+        self.menu_3.addAction(self.actioncheck)
 
         self.retranslateUi(MainWindow)
 
@@ -63,8 +69,10 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.actionSelect_Dir.setText(QCoreApplication.translate("MainWindow", u"Select Dir", None))
+        self.actioncheck.setText(QCoreApplication.translate("MainWindow", u"\u68c0\u67e5", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u5904\u7406\u76ee\u5f55\uff1a", None))
         self.menu.setTitle(QCoreApplication.translate("MainWindow", u"\u8bbe\u7f6e", None))
         self.menu_2.setTitle(QCoreApplication.translate("MainWindow", u"\u542f\u52a8\u66ff\u6362", None))
+        self.menu_3.setTitle(QCoreApplication.translate("MainWindow", u"\u4e13\u5229", None))
     # retranslateUi
 

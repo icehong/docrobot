@@ -1,4 +1,4 @@
-$path = "D:\workspace\ÎÄ¼þ×ª»»\workdir\" 
+$path = "D:\workspace\docrobot\workdir\" 
 $word_app = New-Object -ComObject Word.Application
 
 $Format = [Microsoft.Office.Interop.Word.WdSaveFormat]::wdFormatXMLDocument
