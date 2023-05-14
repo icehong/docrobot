@@ -29,6 +29,8 @@ class Ui_MainWindow(object):
         self.actionSelect_Dir.setObjectName(u"actionSelect_Dir")
         self.actioncheck = QAction(MainWindow)
         self.actioncheck.setObjectName(u"actioncheck")
+        self.actionreplace = QAction(MainWindow)
+        self.actionreplace.setObjectName(u"actionreplace")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.textEdit = QTextEdit(self.centralwidget)
@@ -59,6 +61,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu_2.menuAction())
         self.menubar.addAction(self.menu_3.menuAction())
         self.menu.addAction(self.actionSelect_Dir)
+        self.menu_2.addAction(self.actionreplace)
         self.menu_3.addAction(self.actioncheck)
 
         self.retranslateUi(MainWindow)
@@ -70,9 +73,10 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.actionSelect_Dir.setText(QCoreApplication.translate("MainWindow", u"Select Dir", None))
         self.actioncheck.setText(QCoreApplication.translate("MainWindow", u"\u68c0\u67e5", None))
+        self.actionreplace.setText(QCoreApplication.translate("MainWindow", u"\u66ff\u6362", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u5904\u7406\u76ee\u5f55\uff1a", None))
         self.menu.setTitle(QCoreApplication.translate("MainWindow", u"\u8bbe\u7f6e", None))
-        self.menu_2.setTitle(QCoreApplication.translate("MainWindow", u"\u542f\u52a8\u66ff\u6362", None))
+        self.menu_2.setTitle(QCoreApplication.translate("MainWindow", u"\u9879\u76ee", None))
         self.menu_3.setTitle(QCoreApplication.translate("MainWindow", u"\u4e13\u5229", None))
     # retranslateUi
 

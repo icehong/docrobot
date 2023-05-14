@@ -3,13 +3,22 @@ import re
 import sys
 from configparser import ConfigParser
 from docx import Document
+from docx.opc.exceptions import PackageNotFoundError
 from openpyxl import load_workbook
 from colorama import init, Fore
 
 
-class Company(object):
-    _name = ''
-
+class Project(object):
+    p_comname = ''  # 公司名称
+    p_order = ''  # 序号
+    p_name = ''  # 项目名
+    p_start = ''
+    p_end = ''
+    p_cost = ''
+    p_people = ''  # 人数
+    p_owner = ''  # 项目负责人
+    p_rnd = ''  # 研发人员
+    p_money = ''  # 总预算
 
 
 def check_and_change(doc, replace):
@@ -66,49 +75,49 @@ def replace_header(doc):
     check_replace(doc.sections[0].header.paragraphs, '.*公司', com_name)
 
 
-def first_table(doc):
+def first_table(doc, prj):
     if doc.tables[0].rows[0].cells[0].paragraphs[0].text == '项目名称：':
-        doc.tables[0].rows[0].cells[1].paragraphs[0].runs[0].text = p_name
+        doc.tables[0].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
         clear_runs(doc.tables[0].rows[0].cells[1].paragraphs[0].runs)
     if doc.tables[0].rows[1].cells[0].paragraphs[0].text == '项目编号：':
-        doc.tables[0].rows[1].cells[1].paragraphs[0].runs[0].text = p_start[0:4] + 'RD' + p_order
+        doc.tables[0].rows[1].cells[1].paragraphs[0].runs[0].text = prj.p_start[0:4] + 'RD' + prj.p_order
         clear_runs(doc.tables[0].rows[1].cells[1].paragraphs[0].runs)
     if doc.tables[0].rows[2].cells[0].paragraphs[0].text == '项目负责人：':
-        doc.tables[0].rows[2].cells[1].paragraphs[0].runs[0].text = p_owner
+        doc.tables[0].rows[2].cells[1].paragraphs[0].runs[0].text = prj.p_owner
         clear_runs(doc.tables[0].rows[2].cells[1].paragraphs[0].runs)
     if doc.tables[0].rows[3].cells[0].paragraphs[0].text == '项目周期：':
-        doc.tables[0].rows[3].cells[1].paragraphs[0].runs[0].text = p_start + '至' + p_end
+        doc.tables[0].rows[3].cells[1].paragraphs[0].runs[0].text = prj.p_start + '至' + prj.p_end
         clear_runs(doc.tables[0].rows[3].cells[1].paragraphs[0].runs)
     return doc
 
 
-def start_time(doc):
-    check_replace(doc.paragraphs, '申请立项时间：\d{4}[-/]\d{1,2}[-/]\d{1,2}', '申请立项时间：' + p_start)
+def start_time(doc, prj):
+    check_replace(doc.paragraphs, '申请立项时间：\d{4}[-/]\d{1,2}[-/]\d{1,2}', '申请立项时间：' + prj.p_start)
 
 
-def second_table(doc):
+def second_table(doc, prj):
     if doc.tables[1].rows[0].cells[0].paragraphs[0].text == '项目立项名称':
-        doc.tables[1].rows[0].cells[1].paragraphs[0].runs[0].text = p_name
+        doc.tables[1].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
         clear_runs(doc.tables[1].rows[0].cells[1].paragraphs[0].runs)
 
     check_replace(doc.tables[1].rows[1].cells[1].paragraphs
                   , '项目团队由(.*)人组成，项目实施周期为(.*)个月。'
-                  , '项目团队由' + p_people + '人组成，项目实施周期为' + p_cost + '个月。')
+                  , '项目团队由' + prj.p_people + '人组成，项目实施周期为' + prj.p_cost + '个月。')
     check_replace(doc.tables[1].rows[6].cells[1].paragraphs
-                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}', p_start + '至' + p_end)
+                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_start + '至' + prj.p_end)
     check_replace(doc.tables[1].rows[7].cells[1].paragraphs
-                  , '项目总资金预算\d+万元', '项目总资金预算' + p_money + '万元')
+                  , '项目总资金预算\d+万元', '项目总资金预算' + prj.p_money + '万元')
 
     # name_list = p_rnd.split('、')
     # name_str = str(len(name_list) + 1)
     check_replace(doc.tables[1].rows[8].cells[1].paragraphs
-                  , '项目总人数：\d+人', '项目总人数：' + p_people + '人')
+                  , '项目总人数：\d+人', '项目总人数：' + prj.p_people + '人')
     check_replace(doc.tables[1].rows[8].cells[1].paragraphs
-                  , '项目负责人：.*', '项目负责人：' + p_owner)
+                  , '项目负责人：.*', '项目负责人：' + prj.p_owner)
     check_replace(doc.tables[1].rows[8].cells[1].paragraphs
-                  , '研发成员：.*', '研发成员：' + p_rnd)
+                  , '研发成员：.*', '研发成员：' + prj.p_rnd)
     check_replace(doc.tables[1].rows[9].cells[1].paragraphs
-                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}', p_start)
+                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_start)
 
     return doc
 
@@ -122,16 +131,16 @@ def check_replace(paras, regex, dst):
             break  # 只替换一次就够用
 
 
-def third_table(doc):
+def third_table(doc, prj):
     if doc.tables[2].rows[0].cells[0].paragraphs[0].text == '项目名称':
-        doc.tables[2].rows[0].cells[1].paragraphs[0].runs[0].text = p_name
+        doc.tables[2].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
         clear_runs(doc.tables[1].rows[0].cells[1].paragraphs[0].runs)
     check_replace(doc.tables[2].rows[1].cells[1].paragraphs
-                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}', p_end)
+                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
     check_replace(doc.tables[2].rows[2].cells[1].paragraphs
-                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}', p_start + '至' + p_end)
+                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_start + '至' + prj.p_end)
 
-    doc.tables[2].rows[3].cells[1].paragraphs[0].runs[0].text = p_owner
+    doc.tables[2].rows[3].cells[1].paragraphs[0].runs[0].text = prj.p_owner
     clear_runs(doc.tables[2].rows[3].cells[1].paragraphs[0].runs)
     return doc
 
@@ -181,42 +190,43 @@ if __name__ == '__main__':
         com_name = str(ws['A1'].value).split("公司")[0] + '公司'
     else:
         print("Error: 找不到 公司名")
+        sys.exit(-2)
 
-    replace_dict = dict()
-    replace_list = []  # 空列表
     max_row_num = ws.max_row
     rangeCell = ws[f'A3:P{max_row_num}']
     for r in rangeCell:
         if r[0].value is None:
             break
-        p_order = str(r[0].value).strip().zfill(2)
-        p_name = str(r[1].value).strip()
-        p_start = r[2].value.strftime('%Y-%m-%d')
-        p_end = r[3].value.strftime('%Y-%m-%d')
-        p_cost = str(r[5].value).strip()
-        p_people = str(r[6].value).strip()  # 人数
-        p_owner = str(r[7].value).strip()  # 项目负责人
-        p_rnd = str(r[8].value).strip()  # 研发人员
-        p_money = str(r[9].value).strip()  # 总预算
+        project = Project()
+        project.p_comname = com_name
+        project.p_order = str(r[0].value).strip().zfill(2)
+        project.p_name = str(r[1].value).strip()
+        project.p_start = r[2].value.strftime('%Y-%m-%d')
+        project.p_end = r[3].value.strftime('%Y-%m-%d')
+        project.p_cost = str(r[5].value).strip()
+        project.p_people = str(r[6].value).strip()  # 人数
+        project.p_owner = str(r[7].value).strip()  # 项目负责人
+        project.p_rnd = str(r[8].value).strip()  # 研发人员
+        project.p_money = str(r[9].value).strip()  # 总预算
 
-        document = Document(workdir + '/RD' + p_order + p_name + '.docx')
-        # debug_doc(document)
-        # TODO to be fixed
-        # replace_header(document)
-        first_table(document)
-        start_time(document)
-        second_table(document)
-        third_table(document)
-        document.save(workdir + '/RD' + p_order + p_name + '.docx')
+        try:
+            doc_name = workdir + '/RD' + project.p_order + project.p_name + '.docx'
+            document = Document(doc_name)
+            # debug_doc(document)
+            # TODO to be fixed
+            # replace_header(document)
+            first_table(document, project)
+            start_time(document, project)
+            second_table(document, project)
+            third_table(document, project)
+            document.save(doc_name)
+        except PackageNotFoundError:
+            print(Fore.RED + '打开文件错误：' + doc_name)
 
     #         document = replace_header(document, company)
     #         document = check_and_change(document, replace_dict)
     #         document = replace_tables(document, replace_dict)
-    #         document.save(new_file)
-    #         print("^" * 30)
-    #     else:
-    #         print("Skip " + name + ".......")
-    # input("处理完毕，按回车键退出.")
+
     if workdir_change:
         with open('config.ini', 'w', encoding='utf-8') as file:
             config = ConfigParser()

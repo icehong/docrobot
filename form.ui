@@ -65,8 +65,9 @@
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
-     <string>启动替换</string>
+     <string>项目</string>
     </property>
+    <addaction name="actionreplace"/>
    </widget>
    <widget class="QMenu" name="menu_3">
     <property name="title">
@@ -87,6 +88,11 @@
   <action name="actioncheck">
    <property name="text">
     <string>检查</string>
+   </property>
+  </action>
+  <action name="actionreplace">
+   <property name="text">
+    <string>替换</string>
    </property>
   </action>
  </widget>
