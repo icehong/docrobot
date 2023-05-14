@@ -120,6 +120,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 document.save(doc_name)
             except PackageNotFoundError:
                 self.textEdit.append('Error打开文件错误：' + doc_name)
+        self.textEdit.append('检查和更新完成.')
 
     def checkpatent(self):
         self.pat_dict.clear()
