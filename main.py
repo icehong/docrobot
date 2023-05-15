@@ -58,6 +58,11 @@ def clear_runs(runs):
 
 
 def debug_doc(doc):
+    for i, sect in enumerate(doc.sections):
+        for j, para in enumerate(sect.header.paragraphs):
+            print(f'Sec.{i} Para.{j} : ', para.text, sep='')
+            for k, run in enumerate(para.runs):
+                print(f'Sec.{i} Para.{j} Run{k}: ', run.text, sep='')
     for i, para in enumerate(doc.paragraphs):
         print(f'Para.{i} : ', para.text, sep='')
         for j, run in enumerate(para.runs):
@@ -69,6 +74,7 @@ def debug_doc(doc):
                     print(f'Table.{k} Row.{l} Cell{m} Para.{i} : ', para.text, sep='')
                     # for j, run in enumerate(para.runs):
                     #     print(f'Para.{i} Run{j}: ', run.text, sep='')
+
 
 
 def replace_header(doc):
@@ -214,7 +220,7 @@ if __name__ == '__main__':
             document = Document(doc_name)
             # debug_doc(document)
             # TODO to be fixed
-            # replace_header(document)
+            # replace_header(document, project)
             first_table(document, project)
             start_time(document, project)
             second_table(document, project)

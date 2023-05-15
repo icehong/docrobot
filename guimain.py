@@ -82,7 +82,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 self.file_pat = self.workdir + '/' + file_sum
 
     def replaceprj(self):
-        wb = load_workbook(self.file_prj, data_only=True)
+        wb = load_workbook(self.file_prj, read_only=True, data_only=True)
         ws = wb.active
         if str(ws['A1'].value).find(u'公司') != -1:
             com_name = str(ws['A1'].value).split("公司")[0] + '公司'
@@ -106,6 +106,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             project.p_owner = str(r[7].value).strip()  # 项目负责人
             project.p_rnd = str(r[8].value).strip()  # 研发人员
             project.p_money = str(r[9].value).strip()  # 总预算
+            self.textEdit.append('开始处理项目：' + project.p_order)
 
             try:
                 doc_name = self.workdir + '/RD' + project.p_order + project.p_name + '.docx'
@@ -134,8 +135,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             p_order = str(r[0].value).strip().zfill(2)
             p_name = str(r[1].value).strip()
             self.pat_dict[p_name] = p_order
+        wb.close()
 
-        wb = load_workbook(self.file_prj)
+        wb = load_workbook(self.file_prj, rich_text=True)
         ws = wb.active
         max_row_num = ws.max_row
         rangeCell = ws[f'L3:P{max_row_num}']
@@ -160,17 +162,17 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.textEdit.append('检查和更新完成.')
         except PermissionError:
             self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_prj)
+        wb.close()
 
-
-def exceptOutConfig(exctype, value, tb):
-    print('My Error Information:')
-    print('Type:', exctype)
-    print('Value:', value)
-    print('Traceback:', tb)
+        from win32com.client import Dispatch
+        xlApp = Dispatch("Excel.Application")
+        xlApp.Visible = False
+        xlBook = xlApp.Workbooks.Open(self.file_prj)
+        xlBook.Save()
+        xlBook.Close()
 
 
 if __name__ == "__main__":
-    sys.excepthook = exceptOutConfig
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
