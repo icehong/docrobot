@@ -148,7 +148,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             lst = p_name.splitlines()
             rep = [self.pat_dict[x] if x in self.pat_dict else x for x in lst]
             for element in rep:
-                if re.search('\d\d', element) is None:
+                if re.search('^\d\d$', element) is None:
                     self.textEdit.append('Error没有找到专利：' + element)
             rep = map(lambda element: 'IP' + element, rep)
             new_ip = ';'.join(rep)
