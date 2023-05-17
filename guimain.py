@@ -1,19 +1,17 @@
 import os
 import re
 import sys
+from configparser import ConfigParser
 
 from PySide6 import QtCore, QtGui
 from PySide6.QtCore import QEventLoop, QTimer
-from colorama import Fore
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
 from docx import Document
 from docx.opc.exceptions import PackageNotFoundError
+from openpyxl.reader.excel import load_workbook
+from win32com.client import Dispatch
 
 import main
-from configparser import ConfigParser
-
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
-from openpyxl.reader.excel import load_workbook
-
 from form import Ui_MainWindow
 
 
@@ -164,7 +162,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_prj)
         wb.close()
 
-        from win32com.client import Dispatch
         xlApp = Dispatch("Excel.Application")
         xlApp.Visible = False
         xlBook = xlApp.Workbooks.Open(self.file_prj)

@@ -88,7 +88,7 @@ def first_table(doc, prj):
     if doc.tables[0].rows[1].cells[0].paragraphs[0].text == '项目编号：':
         doc.tables[0].rows[1].cells[1].paragraphs[0].runs[0].text = prj.p_start[0:4] + 'RD' + prj.p_order
         clear_runs(doc.tables[0].rows[1].cells[1].paragraphs[0].runs)
-    if doc.tables[0].rows[2].cells[0].paragraphs[0].text == '项目负责人：':
+    if doc.tables[0].rows[2].cells[0].paragraphs[0].text == '项目负责人：' and prj.p_owner != 'None':
         doc.tables[0].rows[2].cells[1].paragraphs[0].runs[0].text = prj.p_owner
         clear_runs(doc.tables[0].rows[2].cells[1].paragraphs[0].runs)
     if doc.tables[0].rows[3].cells[0].paragraphs[0].text == '项目周期：':
@@ -118,12 +118,11 @@ def second_table(doc, prj):
     # name_str = str(len(name_list) + 1)
     check_replace(doc.tables[1].rows[8].cells[1].paragraphs
                   , '项目总人数：\d+人', '项目总人数：' + prj.p_people + '人')
-    check_replace(doc.tables[1].rows[8].cells[1].paragraphs
-                  , '项目负责人：.*', '项目负责人：' + prj.p_owner)
-    check_replace(doc.tables[1].rows[8].cells[1].paragraphs
-                  , '研发成员：.*', '研发成员：' + prj.p_rnd)
-    check_replace(doc.tables[1].rows[9].cells[1].paragraphs
-                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_start)
+    if prj.p_owner != 'None':
+        check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '项目负责人：.*', '项目负责人：' + prj.p_owner)
+    if prj.p_rnd != 'None':
+        check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '研发成员：.*', '研发成员：' + prj.p_rnd)
+    check_replace(doc.tables[1].rows[9].cells[1].paragraphs, '\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_start)
 
     return doc
 
@@ -146,8 +145,9 @@ def third_table(doc, prj):
     check_replace(doc.tables[2].rows[2].cells[1].paragraphs
                   , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_start + '至' + prj.p_end)
 
-    doc.tables[2].rows[3].cells[1].paragraphs[0].runs[0].text = prj.p_owner
-    clear_runs(doc.tables[2].rows[3].cells[1].paragraphs[0].runs)
+    if prj.p_owner != 'None':
+        doc.tables[2].rows[3].cells[1].paragraphs[0].runs[0].text = prj.p_owner
+        clear_runs(doc.tables[2].rows[3].cells[1].paragraphs[0].runs)
     return doc
 
 
