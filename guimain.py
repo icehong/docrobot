@@ -149,6 +149,12 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             if r[0].value is None:
                 break
             p_name = str(r[0].value).strip()
+            if p_name == '无':
+                if r[3].value != '无':
+                    self.textEdit.append(str(i) + ' 行: ' + str(r[3].value) + ' 替换为 ' + p_name)
+                    r[3].value = p_name
+                continue
+
             lst = p_name.splitlines()
             rep = [self.pat_dict[x] if x in self.pat_dict else x for x in lst]
             for element in rep:
