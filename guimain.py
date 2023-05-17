@@ -168,6 +168,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         xlApp = Dispatch("Excel.Application")
         xlApp.Visible = False
+        xlApp.DisplayAlerts = False
         xlBook = xlApp.Workbooks.Open(self.file_prj)
         xlBook.Save()
         xlBook.Close()
