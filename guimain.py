@@ -78,6 +78,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 self.file_prj = self.workdir + '/' + file_sum
             if file_sum.endswith('知识产权汇总表.xlsx') and not file_sum.startswith('~$'):
                 self.file_pat = self.workdir + '/' + file_sum
+        if self.file_prj == '':
+            self.textEdit.append('没找到：' + '立项报告汇总表.xlsx')
+        if self.file_pat == '':
+            self.textEdit.append('没找到：' + '知识产权汇总表.xlsx')
 
     def replaceprj(self):
         wb = load_workbook(self.file_prj, read_only=True, data_only=True)
