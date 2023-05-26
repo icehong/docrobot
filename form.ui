@@ -92,7 +92,7 @@
   </action>
   <action name="actionreplace">
    <property name="text">
-    <string>替换</string>
+    <string>批量替换</string>
    </property>
   </action>
  </widget>

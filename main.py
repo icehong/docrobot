@@ -129,10 +129,13 @@ def second_table(doc, prj):
 
 def check_replace(paras, regex, dst):
     for i, para in enumerate(paras):
-        if re.search(regex, para.text) is not None:
-            para.runs[0].text = re.sub(regex, dst,
-                                       para.text)
-            clear_runs(para.runs)
+        result = re.search(regex, para.text)
+        if result is not None:
+            if result.group() != dst:
+                print(result.group() + ' 被替换为 ' + dst)
+                para.runs[0].text = re.sub(regex, dst,
+                                           para.text)
+                clear_runs(para.runs)
             break  # 只替换一次就够用
 
 
