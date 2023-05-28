@@ -7,3 +7,4 @@ workdir*
 /config.ini
 /build/
 /dist/
+/docrobot.zip

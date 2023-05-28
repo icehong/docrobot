@@ -75,7 +75,15 @@
     </property>
     <addaction name="actioncheck"/>
    </widget>
+   <widget class="QMenu" name="menu_4">
+    <property name="title">
+     <string>检查</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="actioncheckall"/>
+   </widget>
    <addaction name="menu"/>
+   <addaction name="menu_4"/>
    <addaction name="menu_2"/>
    <addaction name="menu_3"/>
   </widget>
@@ -93,6 +101,11 @@
   <action name="actionreplace">
    <property name="text">
     <string>批量替换</string>
+   </property>
+  </action>
+  <action name="actioncheckall">
+   <property name="text">
+    <string>检查所有项</string>
    </property>
   </action>
  </widget>

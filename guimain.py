@@ -3,8 +3,9 @@ import re
 import sys
 from configparser import ConfigParser
 
-from PySide6 import QtCore, QtGui
+from PySide6 import QtCore
 from PySide6.QtCore import QEventLoop, QTimer
+from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
 from docx import Document
 from docx.opc.exceptions import PackageNotFoundError
@@ -43,8 +44,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         sys.stderr.textWritten.connect(self.outputWritten)
 
         self.actionSelect_Dir.triggered.connect(self.setDocUrl)
-        self.actioncheck.triggered.connect(self.checkpatent)
-        self.actionreplace.triggered.connect(self.replaceprj)
+        self.actioncheck.triggered.connect(lambda: self.checkpatent(True))
+        self.actionreplace.triggered.connect(lambda: self.replaceprj(True))
+        self.actioncheckall.triggered.connect(self.checkall)
 
         self.config = ConfigParser()
         try:
@@ -58,7 +60,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def outputWritten(self, text):
         cursor = self.textEdit.textCursor()
-        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.movePosition(QTextCursor.End)
         cursor.insertText(text)
         self.textEdit.setTextCursor(cursor)
         self.textEdit.ensureCursorVisible()
@@ -85,34 +87,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if self.file_pat == '':
             self.textEdit.append('没找到：' + '知识产权汇总表.xlsx')
 
-    def replaceprj(self):
-        self.upate_global()
-        wb = load_workbook(self.file_prj, read_only=True, data_only=True)
-        ws = wb.active
-        if str(ws['A1'].value).find(u'公司') != -1:
-            com_name = str(ws['A1'].value).split("公司")[0] + '公司'
-        else:
-            print("Error: 找不到 公司名")
-            return
+    def replaceprj(self, modify=False):
+        self.textEdit.setText('')
+        self.update_data()
 
-        max_row_num = ws.max_row
-        rangeCell = ws[f'A3:P{max_row_num}']
-        for r in rangeCell:
-            if r[0].value is None:
-                break
-            project = main.Project()
-            project.p_comname = com_name
-            project.p_order = str(r[0].value).strip().zfill(2)
-            project.p_name = str(r[1].value).strip()
-            project.p_start = r[2].value.strftime('%Y-%m-%d')
-            project.p_end = r[3].value.strftime('%Y-%m-%d')
-            project.p_cost = str(r[5].value).strip()
-            project.p_people = str(r[6].value).strip()  # 人数
-            project.p_owner = str(r[7].value).strip()  # 项目负责人
-            project.p_rnd = str(r[8].value).strip()  # 研发人员
-            project.p_money = str(r[9].value).strip()  # 总预算
+        for project in self.arr_prj:
             self.textEdit.append('开始处理项目：' + project.p_order)
-
+            doc_name = ''
             try:
                 doc_name = self.workdir + '/RD' + project.p_order + project.p_name + '.docx'
                 document = Document(doc_name)
@@ -122,89 +103,89 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 main.first_table(document, project)
                 main.start_time(document, project)
                 main.second_table(document, project)
-                main.third_table(document, project, self.pat_dict2)
-                document.save(doc_name)
+                main.third_table(document, project)
+
+                self.checkpat2(document, project)
+
+                if modify:
+                    document.save(doc_name)
             except PackageNotFoundError:
                 self.textEdit.append('Error打开文件错误：' + doc_name)
         self.textEdit.append('检查和更新完成.')
 
-    def checkpatent(self):
-        self.upate_global()
+    def checkpatent(self, modify=False):
+        self.textEdit.setText('')
+        self.update_data()
 
-        wb = load_workbook(self.file_prj, rich_text=True)
+        changed = False
+        wb = load_workbook(self.file_prj)
         ws = wb.active
         max_row_num = ws.max_row
-        rangeCell = ws[f'A3:P{max_row_num}']
+        range_cell = ws[f'A3:P{max_row_num}']
         i: int = 0
-        for r in rangeCell:
+        for r in range_cell:
             if r[11].value is None:
                 break
             pat_name = str(r[11].value).strip()
-            p_order = self.arr_prj[i].p_order
-            p_name = self.arr_prj[i].p_name
 
             if pat_name == '无':
                 if r[14].value != '无':
                     self.textEdit.append(str(i + 3) + ' 行: ' + str(r[14].value) + ' 替换为 ' + pat_name)
                     r[14].value = pat_name
+                    changed |= True
             else:
                 lst = pat_name.splitlines()
-                for pat in lst:
-                    if pat in self.pat_dict2:
-                        self.checkpat2(self.workdir + '/RD' + p_order + p_name + '.docx', pat, self.pat_dict2[pat])
-                    else:
-                        self.textEdit.append('Error没有找到专利：' + pat)
-
                 rep = [self.pat_dict[x] if x in self.pat_dict else x for x in lst]
                 for element in rep:
                     if re.search('^\d\d$', element) is None:
                         self.textEdit.append('Error没有找到专利：' + element)
-                rep = map(lambda element: 'IP' + element, rep)
+                rep = map(lambda e: 'IP' + e, rep)
                 new_ip = ';'.join(rep)
                 if r[14].value != new_ip:
                     self.textEdit.append(str(i + 3) + ' 行: ' + str(r[14].value) + ' 替换为 ' + new_ip)
                     r[14].value = new_ip
+                    changed |= True
             i = i + 1
         try:
-            wb.save(self.file_prj)
+            if changed and modify:
+                wb.save(self.file_prj)
+                xl_app = Dispatch("Excel.Application")
+                xl_app.Visible = False
+                xl_app.DisplayAlerts = False
+                xl_book = xl_app.Workbooks.Open(self.file_prj)
+                xl_book.Save()
+                xl_book.Close()
             self.textEdit.append('检查和更新完成.')
         except PermissionError:
             self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_prj)
         wb.close()
 
-        xlApp = Dispatch("Excel.Application")
-        xlApp.Visible = False
-        xlApp.DisplayAlerts = False
-        xlBook = xlApp.Workbooks.Open(self.file_prj)
-        xlBook.Save()
-        xlBook.Close()
+    def checkpat2(self, doc, prj):
+        lst = prj.pat_list.splitlines()
+        for pat_name in lst:
+            if pat_name in self.pat_dict2:
+                pat_num = self.pat_dict2[pat_name]
+                found = False
+                for i, para in enumerate(doc.tables[2].rows[4].cells[0].paragraphs):
+                    if re.search(pat_name + '，.*号：', para.text):
+                        found |= True
+                        result = re.search(pat_name + '，.*号：' + pat_num, para.text)
+                        if result is None:
+                            self.textEdit.append(prj.p_name + ' 专利名和编号不匹配：' + pat_name + ' , ' + pat_num)
+                            self.textEdit.append('文档内容：' + para.text)
+                if not found:
+                    self.textEdit.append(prj.p_name + ' 全文找不到：' + pat_name)
+            else:
+                self.textEdit.append('Error没有找到专利：' + pat_name)
 
-    def checkpat2(self, doc_name, pat_name, pat_num):
-        try:
-            doc = Document(doc_name)
-            found = False
-            for i, para in enumerate(doc.tables[2].rows[4].cells[0].paragraphs):
-                if pat_name in para.text:
-                    found = True
-                    result = re.search(pat_name + '.*号：' + pat_num, para.text)
-                    if result is None:
-                        self.textEdit.append(doc_name + ' 专利名和编号不匹配：' + pat_name + ' , ' + pat_num)
-                        self.textEdit.append('文档内容：' + para.text)
-                    break
-            if not found:
-                self.textEdit.append(doc_name + ' 全文找不到：' + pat_name)
-
-        except PackageNotFoundError:
-            self.textEdit.append('Error打开文件错误：' + doc_name)
-
-    def upate_global(self):
+    def update_data(self):
         self.pat_dict.clear()
         self.pat_dict2.clear()
         wb = load_workbook(self.file_pat, read_only=True, data_only=True)
         ws = wb.active
         max_row_num = ws.max_row
-        rangeCell = ws[f'A3:D{max_row_num}']
-        for r in rangeCell:
+        range_cell = ws[f'A3:D{max_row_num}']
+        for r in range_cell:
             if r[0].value is None:
                 break
             p_order = str(r[0].value).strip().zfill(2)
@@ -215,6 +196,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         wb.close()
 
         self.arr_prj.clear()
+        com_name = 'XX公司'
         wb = load_workbook(self.file_prj, read_only=True, data_only=True)
         ws = wb.active
         if str(ws['A1'].value).find(u'公司') != -1:
@@ -222,14 +204,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             print("Error: 找不到 公司名")
         max_row_num = ws.max_row
-        rangeCell = ws[f'A3:P{max_row_num}']
-        for r in rangeCell:
+        range_cell = ws[f'A3:P{max_row_num}']
+        for r in range_cell:
             if r[0].value is None:
                 break
             project = main.Project()
             project.p_comname = com_name
             project.p_order = str(r[0].value).strip().zfill(2)
-            project.p_name = str(r[1].value).strip()
+            project.p_name = str(r[1].value).strip()  # 项目名称
             project.p_start = r[2].value.strftime('%Y-%m-%d')
             project.p_end = r[3].value.strftime('%Y-%m-%d')
             project.p_cost = str(r[5].value).strip()
@@ -237,8 +219,17 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             project.p_owner = str(r[7].value).strip()  # 项目负责人
             project.p_rnd = str(r[8].value).strip()  # 研发人员
             project.p_money = str(r[9].value).strip()  # 总预算
+            project.pat_list = str(r[11].value).strip()  # 知识产权名称
+            project.ip_list = str(r[14].value).strip()  # IP
             self.arr_prj.append(project)
         wb.close()
+
+    def checkall(self):
+        self.textEdit.setText('')
+        self.update_data()
+
+        self.replaceprj(False)
+        self.checkpatent(False)
 
 
 if __name__ == "__main__":
