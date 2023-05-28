@@ -1,7 +1,7 @@
 import os
 import re
 import sys
-from configparser import ConfigParser
+from configparser import ConfigParser, DuplicateSectionError
 
 from PySide6 import QtCore
 from PySide6.QtCore import QEventLoop, QTimer
@@ -53,8 +53,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.config.read('config.ini', encoding='UTF-8')
             self.workdir = self.config['config']['lasting']
             self.onchangeworkdir()
-        except:
             self.config.add_section('config')
+        except DuplicateSectionError:
             pass
         self.lineEdit.setText(self.workdir)
 
@@ -138,7 +138,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 rep = [self.pat_dict[x] if x in self.pat_dict else x for x in lst]
                 for element in rep:
                     if re.search('^\d\d$', element) is None:
-                        self.textEdit.append('Error没有找到专利：' + element)
+                        self.textEdit.append('专利IP错误：' + element)
                 rep = map(lambda e: 'IP' + e, rep)
                 new_ip = ';'.join(rep)
                 if r[14].value != new_ip:
@@ -166,15 +166,16 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             if pat_name in self.pat_dict2:
                 pat_num = self.pat_dict2[pat_name]
                 found = False
+                regex = pat_name.replace('[', r'\[').replace(']', r'\]')
                 for i, para in enumerate(doc.tables[2].rows[4].cells[0].paragraphs):
-                    if re.search(pat_name + '，.*号：', para.text):
+                    if re.search(regex + '，.*号：', para.text):
                         found |= True
-                        result = re.search(pat_name + '，.*号：' + pat_num, para.text)
+                        result = re.search(regex + '，.*号：' + pat_num, para.text)
                         if result is None:
-                            self.textEdit.append(prj.p_name + ' 专利名和编号不匹配：' + pat_name + ' , ' + pat_num)
+                            self.textEdit.append('专利名和编号不匹配：' + pat_name + ' , ' + pat_num)
                             self.textEdit.append('文档内容：' + para.text)
                 if not found:
-                    self.textEdit.append(prj.p_name + ' 全文找不到：' + pat_name)
+                    self.textEdit.append('全文找不到：' + pat_name)
             else:
                 self.textEdit.append('Error没有找到专利：' + pat_name)
 
@@ -228,8 +229,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.textEdit.setText('')
         self.update_data()
 
-        self.replaceprj(False)
         self.checkpatent(False)
+        self.replaceprj(False)
+
 
 
 if __name__ == "__main__":
