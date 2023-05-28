@@ -56,14 +56,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.config.add_section('config')
         except DuplicateSectionError:
             pass
+        except FileNotFoundError as e:
+            self.textEdit.append('路径错误：' + e.filename)
+            self.workdir = ''
         self.lineEdit.setText(self.workdir)
 
     def outputWritten(self, text):
-        cursor = self.textEdit.textCursor()
-        cursor.movePosition(QTextCursor.End)
-        cursor.insertText(text)
-        self.textEdit.setTextCursor(cursor)
-        self.textEdit.ensureCursorVisible()
+        # cursor = self.textEdit.textCursor()
+        # cursor.movePosition(QTextCursor.End)
+        # cursor.insertText(text)
+        # self.textEdit.setTextCursor(cursor)
+        # self.textEdit.ensureCursorVisible()
+        self.textEdit.append(text)
 
     def setDocUrl(self):
         # 重新选择输入和输出目录时，进度条设置为0，文本框的内容置空
