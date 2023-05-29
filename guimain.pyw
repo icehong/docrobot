@@ -157,8 +157,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 xl_app.Visible = False
                 xl_app.DisplayAlerts = False
                 xl_book = xl_app.Workbooks.Open(self.file_prj)
-                xl_book.Save()
-                xl_book.Close()
+                xl_book.Close(True)
             self.textEdit.append('检查和更新完成.')
         except PermissionError:
             self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_prj)
