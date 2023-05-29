@@ -76,58 +76,66 @@ def debug_doc(doc):
                     #     print(f'Para.{i} Run{j}: ', run.text, sep='')
 
 
-
 def replace_header(doc):
     check_replace(doc.sections[0].header.paragraphs, '.*公司', com_name)
 
 
 def first_table(doc, prj):
+    match = 0
     if doc.tables[0].rows[0].cells[0].paragraphs[0].text == '项目名称：':
         doc.tables[0].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
         clear_runs(doc.tables[0].rows[0].cells[1].paragraphs[0].runs)
+        match = match + 1
     if doc.tables[0].rows[1].cells[0].paragraphs[0].text == '项目编号：':
         doc.tables[0].rows[1].cells[1].paragraphs[0].runs[0].text = prj.p_start[0:4] + 'RD' + prj.p_order
         clear_runs(doc.tables[0].rows[1].cells[1].paragraphs[0].runs)
+        match = match + 1
     if doc.tables[0].rows[2].cells[0].paragraphs[0].text == '项目负责人：' and prj.p_owner != 'None':
         doc.tables[0].rows[2].cells[1].paragraphs[0].runs[0].text = prj.p_owner
         clear_runs(doc.tables[0].rows[2].cells[1].paragraphs[0].runs)
+        match = match + 1
     if doc.tables[0].rows[3].cells[0].paragraphs[0].text == '项目周期：':
         doc.tables[0].rows[3].cells[1].paragraphs[0].runs[0].text = prj.p_start + '至' + prj.p_end
         clear_runs(doc.tables[0].rows[3].cells[1].paragraphs[0].runs)
-    return doc
+        match = match + 1
+    return match
 
 
 def start_time(doc, prj):
-    check_replace(doc.paragraphs, '申请立项时间：\d{4}[-/]\d{1,2}[-/]\d{1,2}', '申请立项时间：' + prj.p_start)
+    match = check_replace(doc.paragraphs, '申请立项时间：\d{4}[-/]\d{1,2}[-/]\d{1,2}', '申请立项时间：' + prj.p_start)
+    return match
 
 
 def second_table(doc, prj):
+    match = 0
     if doc.tables[1].rows[0].cells[0].paragraphs[0].text == '项目立项名称':
         doc.tables[1].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
         clear_runs(doc.tables[1].rows[0].cells[1].paragraphs[0].runs)
+        match = match + 1
 
-    check_replace(doc.tables[1].rows[1].cells[1].paragraphs
-                  , '项目团队由(.*)人组成，项目实施周期为(.*)个月。'
-                  , '项目团队由' + prj.p_people + '人组成，项目实施周期为' + prj.p_cost + '个月。')
-    check_replace(doc.tables[1].rows[6].cells[1].paragraphs
-                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_start + '至' + prj.p_end)
-    check_replace(doc.tables[1].rows[7].cells[1].paragraphs
-                  , '项目总资金预算\d+万元', '项目总资金预算' + prj.p_money + '万元')
+    match = match + check_replace(doc.tables[1].rows[1].cells[1].paragraphs
+                                  , '项目团队由(.*)人组成，项目实施周期为(.*)个月。'
+                                  , '项目团队由' + prj.p_people + '人组成，项目实施周期为' + prj.p_cost + '个月。')
+    match = match + check_replace(doc.tables[1].rows[6].cells[1].paragraphs
+                                  , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}',
+                                  prj.p_start + '至' + prj.p_end)
+    match = match + check_replace(doc.tables[1].rows[7].cells[1].paragraphs
+                                  , '项目总资金预算\d+万元', '项目总资金预算' + prj.p_money + '万元')
 
-    # name_list = p_rnd.split('、')
-    # name_str = str(len(name_list) + 1)
-    check_replace(doc.tables[1].rows[8].cells[1].paragraphs
-                  , '项目总人数：\d+人', '项目总人数：' + prj.p_people + '人')
+    match = match + check_replace(doc.tables[1].rows[8].cells[1].paragraphs
+                                  , '项目总人数：\d+人', '项目总人数：' + prj.p_people + '人')
     if prj.p_owner != 'None':
-        check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '项目负责人：.*', '项目负责人：' + prj.p_owner)
+        match = match + check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '项目负责人：.*',
+                                      '项目负责人：' + prj.p_owner)
     if prj.p_rnd != 'None':
-        check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '研发成员：.*', '研发成员：' + prj.p_rnd)
-    check_replace(doc.tables[1].rows[9].cells[1].paragraphs, '\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_start)
+        match = match + check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '研发成员：.*', '研发成员：' + prj.p_rnd)
+    match = match + check_replace(doc.tables[1].rows[9].cells[1].paragraphs, '\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_start)
 
-    return doc
+    return match
 
 
 def check_replace(paras, regex, dst):
+    match = 0
     for i, para in enumerate(paras):
         result = re.search(regex, para.text)
         if result is not None:
@@ -136,22 +144,27 @@ def check_replace(paras, regex, dst):
                 para.runs[0].text = re.sub(regex, dst,
                                            para.text)
                 clear_runs(para.runs)
+            match = match + 1
             break  # 只替换一次就够用
+    return match
 
 
 def third_table(doc, prj):
+    match = 0
     if doc.tables[2].rows[0].cells[0].paragraphs[0].text == '项目名称':
         doc.tables[2].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
         clear_runs(doc.tables[1].rows[0].cells[1].paragraphs[0].runs)
-    check_replace(doc.tables[2].rows[1].cells[1].paragraphs
+        match = match + 1
+    match = match + check_replace(doc.tables[2].rows[1].cells[1].paragraphs
                   , '\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
-    check_replace(doc.tables[2].rows[2].cells[1].paragraphs
+    match = match + check_replace(doc.tables[2].rows[2].cells[1].paragraphs
                   , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_start + '至' + prj.p_end)
 
     if prj.p_owner != 'None':
         doc.tables[2].rows[3].cells[1].paragraphs[0].runs[0].text = prj.p_owner
         clear_runs(doc.tables[2].rows[3].cells[1].paragraphs[0].runs)
-    return doc
+        match = match + 1
+    return match
 
 
 if __name__ == '__main__':

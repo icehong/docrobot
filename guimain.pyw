@@ -92,11 +92,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.textEdit.append('没找到：' + '知识产权汇总表.xlsx')
 
     def replaceprj(self, modify=False):
-        self.textEdit.setText('')
-        self.update_data()
+        if modify:
+            self.textEdit.setText('')
+            self.update_data()
 
         for project in self.arr_prj:
-            self.textEdit.append('开始处理项目：' + project.p_order)
+            # self.textEdit.append(project.p_order + ' 项目开始处理...')
+            match = 0  # 已匹配条目数
             doc_name = ''
             try:
                 doc_name = self.workdir + '/RD' + project.p_order + project.p_name + '.docx'
@@ -104,23 +106,26 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 # debug_doc(document)
                 # TODO to be fixed
                 # replace_header(document)
-                main.first_table(document, project)
-                main.start_time(document, project)
-                main.second_table(document, project)
-                main.third_table(document, project)
+                match = match + main.first_table(document, project)
+                match = match + main.start_time(document, project)
+                match = match + main.second_table(document, project)
+                match = match + main.third_table(document, project)
 
-                self.checkpat2(document, project)
+                match = match + self.checkpat2(document, project)
 
                 if modify:
                     document.save(doc_name)
             except PackageNotFoundError:
                 self.textEdit.append('Error打开文件错误：' + doc_name)
-        self.textEdit.append('检查和更新完成.')
+            self.textEdit.append(project.p_order + ' 项目：处理完成。 <font color="green"><b>'
+                                 + str(match) + ' </b></font> 项条目匹配。')
 
     def checkpatent(self, modify=False):
-        self.textEdit.setText('')
-        self.update_data()
+        if modify:
+            self.textEdit.setText('')
+            self.update_data()
 
+        match = 0  # 已匹配条目数
         changed = False
         wb = load_workbook(self.file_prj)
         ws = wb.active
@@ -134,9 +139,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
             if pat_name == '无':
                 if r[14].value != '无':
-                    self.textEdit.append(str(i + 3) + ' 行: ' + str(r[14].value) + ' 替换为 ' + pat_name)
+                    self.textEdit.append(str(i + 3) + ' 行: ' + str(r[14].value) + ' 替换为 ' + '无')
                     r[14].value = pat_name
                     changed |= True
+                else:
+                    match = match + 1
             else:
                 lst = pat_name.splitlines()
                 rep = [self.pat_dict[x] if x in self.pat_dict else x for x in lst]
@@ -149,6 +156,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                     self.textEdit.append(str(i + 3) + ' 行: ' + str(r[14].value) + ' 替换为 ' + new_ip)
                     r[14].value = new_ip
                     changed |= True
+                else:
+                    match = match + 1
             i = i + 1
         try:
             if changed and modify:
@@ -158,12 +167,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 xl_app.DisplayAlerts = False
                 xl_book = xl_app.Workbooks.Open(self.file_prj)
                 xl_book.Close(True)
-            self.textEdit.append('检查和更新完成.')
         except PermissionError:
             self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_prj)
         wb.close()
+        self.textEdit.append('项目立项表IP更新完成。 <font color="green"><b>' + str(match) + ' </b></font> 项条目匹配。')
+
 
     def checkpat2(self, doc, prj):
+        match = 0
         lst = prj.pat_list.splitlines()
         for pat_name in lst:
             if pat_name in self.pat_dict2:
@@ -177,10 +188,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                         if result is None:
                             self.textEdit.append('专利名和编号不匹配：' + pat_name + ' , ' + pat_num)
                             self.textEdit.append('文档内容：' + para.text)
+                        else:
+                            match = match + 1
                 if not found:
                     self.textEdit.append('全文找不到：' + pat_name)
             else:
                 self.textEdit.append('Error没有找到专利：' + pat_name)
+        return match
 
     def update_data(self):
         self.pat_dict.clear()
