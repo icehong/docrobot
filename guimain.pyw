@@ -117,6 +117,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                     document.save(doc_name)
             except PackageNotFoundError:
                 self.textEdit.append('Error打开文件错误：' + doc_name)
+            except PermissionError:
+                self.textEdit.append('Error 保存文件错误，可能是文件已被打开：' + doc_name)
             self.textEdit.append(project.p_order + ' 项目：处理完成。 <font color="green"><b>'
                                  + str(match) + ' </b></font> 项条目匹配。')
 
@@ -180,7 +182,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             if pat_name in self.pat_dict2:
                 pat_num = self.pat_dict2[pat_name]
                 found = False
-                regex = pat_name.replace('[', r'\[').replace(']', r'\]')
+                regex = pat_name.replace('[', r'\[').replace(']', r'\]'.replace('(', r'\(').replace(')', r'\)'))
                 for i, para in enumerate(doc.tables[2].rows[4].cells[0].paragraphs):
                     if re.search(regex + '，.*号：', para.text):
                         found |= True
