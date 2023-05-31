@@ -120,10 +120,10 @@ def second_table(doc, prj):
                                   , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}',
                                   prj.p_start + '至' + prj.p_end)
     match = match + check_replace(doc.tables[1].rows[7].cells[1].paragraphs
-                                  , '项目总资金预算\d+万元', '项目总资金预算' + prj.p_money + '万元')
+                                  , '项目总资金预算.*万元', '项目总资金预算' + prj.p_money + '万元')
 
     match = match + check_replace(doc.tables[1].rows[8].cells[1].paragraphs
-                                  , '项目总人数：\d+人', '项目总人数：' + prj.p_people + '人')
+                                  , '项目总人数：.*人', '项目总人数：' + prj.p_people + '人')
     if prj.p_owner != 'None':
         match = match + check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '项目负责人：.*',
                                       '项目负责人：' + prj.p_owner)
