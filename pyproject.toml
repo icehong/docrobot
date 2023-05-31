@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+[project]
+name = "docrobot"
+version = "1.0.1"
+authors = [
+  { name="Xu Hong", email="icehong@gmail.com" },
+]
+description = "一个文档自动化处理工具"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+]
+dependencies = [
+    "pywin32",
+    "python-docx",
+    "openpyxl",
+    "pyside6"
+]
+[project.urls]
+"Homepage" = "https://github.com/icehong/docrobot"
+"Bug Tracker" = "https://github.com/icehong/docrobot/issues"
+[project.scripts]
+docrobot = "docrobot:start_gui"
+[tool.setuptools.package-dir]
+docrobot = "src/docrobot"
+[tool.setuptools.package-data]
+docrobot = ["*.pyw"]

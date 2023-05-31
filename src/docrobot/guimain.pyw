@@ -1,19 +1,18 @@
 import os
 import re
 import sys
-from configparser import ConfigParser, DuplicateSectionError
+from configparser import ConfigParser
 
 from PySide6 import QtCore
 from PySide6.QtCore import QEventLoop, QTimer
-from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
 from docx import Document
 from docx.opc.exceptions import PackageNotFoundError
 from openpyxl.reader.excel import load_workbook
 from win32com.client import Dispatch
 
-import main
-from form import Ui_MainWindow
+from docrobot import util
+from docrobot.form import Ui_MainWindow
 
 
 class EmittingStr(QtCore.QObject):
@@ -52,10 +51,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         try:
             self.config.read('config.ini', encoding='UTF-8')
             self.workdir = self.config['config']['lasting']
-            self.onchangeworkdir()
+        except KeyError:
             self.config.add_section('config')
-        except DuplicateSectionError:
-            pass
+        try:
+            if self.workdir != '':
+                self.onchangeworkdir()
         except FileNotFoundError as e:
             self.textEdit.append('路径错误：' + e.filename)
             self.workdir = ''
@@ -106,10 +106,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 # debug_doc(document)
                 # TODO to be fixed
                 # replace_header(document)
-                match = match + main.first_table(document, project)
-                match = match + main.start_time(document, project)
-                match = match + main.second_table(document, project)
-                match = match + main.third_table(document, project)
+                match = match + util.first_table(document, project)
+                match = match + util.start_time(document, project)
+                match = match + util.second_table(document, project)
+                match = match + util.third_table(document, project)
 
                 match = match + self.checkpat2(document, project)
 
@@ -228,7 +228,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         for r in range_cell:
             if r[0].value is None:
                 break
-            project = main.Project()
+            project = util.Project()
             project.p_comname = com_name
             project.p_order = str(r[0].value).strip().zfill(2)
             project.p_name = str(r[1].value).strip()  # 项目名称

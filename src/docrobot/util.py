@@ -76,8 +76,8 @@ def debug_doc(doc):
                     #     print(f'Para.{i} Run{j}: ', run.text, sep='')
 
 
-def replace_header(doc):
-    check_replace(doc.sections[0].header.paragraphs, '.*公司', com_name)
+def replace_header(doc, prj):
+    check_replace(doc.sections[0].header.paragraphs, '.*公司', prj.com_name)
 
 
 def first_table(doc, prj):
@@ -250,7 +250,7 @@ if __name__ == '__main__':
     #         document = replace_tables(document, replace_dict)
 
     if workdir_change:
-        with open('config.ini', 'w', encoding='utf-8') as file:
+        with open('../../config.ini', 'w', encoding='utf-8') as file:
             config = ConfigParser()
             config.write(file)  # 数据写入配置文件
     input("处理完成.")
