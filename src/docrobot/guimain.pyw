@@ -12,8 +12,20 @@ from docx.opc.exceptions import PackageNotFoundError
 from openpyxl.reader.excel import load_workbook
 from win32com.client import DispatchEx
 
-from docrobot import util
 from docrobot.form import Ui_MainWindow
+
+
+class Project(object):
+    p_comname = ''  # 公司名称
+    p_order = ''  # 序号
+    p_name = ''  # 项目名
+    p_start = ''
+    p_end = ''
+    p_cost = ''
+    p_people = ''  # 人数
+    p_owner = ''  # 项目负责人
+    p_rnd = ''  # 研发人员
+    p_money = ''  # 总预算
 
 
 class EmittingStr(QtCore.QObject):
@@ -63,12 +75,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.lineEdit.setText(self.workdir)
 
     def outputWritten(self, text):
-        # cursor = self.textEdit.textCursor()
-        # cursor.movePosition(QTextCursor.End)
-        # cursor.insertText(text)
-        # self.textEdit.setTextCursor(cursor)
-        # self.textEdit.ensureCursorVisible()
-        self.textEdit.append(text)
+        self.textEdit.append(text.strip())
 
     def setDocUrl(self):
         # 重新选择输入和输出目录时，进度条设置为0，文本框的内容置空
@@ -107,10 +114,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 # debug_doc(document)
                 # TODO to be fixed
                 # replace_header(document)
-                match = match + util.first_table(document, project)
-                match = match + util.start_time(document, project)
-                match = match + util.second_table(document, project)
-                match = match + util.third_table(document, project)
+                match = match + self.first_table(document, project)
+                match = match + self.start_time(document, project)
+                match = match + self.second_table(document, project)
+                match = match + self.third_table(document, project)
 
                 match = match + self.checkpat2(document, project)
 
@@ -142,7 +149,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
             if pat_name == '无':
                 if r[14].value != '无':
-                    self.textEdit.append(str(i + 3) + ' 行: ' + str(r[14].value) + ' 替换为 ' + '无')
+                    self.textEdit.append(str(i + 3) + ' 行: ' + str(r[14].value) + ' ===> ' + '无')
                     r[14].value = pat_name
                     changed |= True
                 else:
@@ -156,7 +163,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 rep = map(lambda e: 'IP' + e, rep)
                 new_ip = ';'.join(rep)
                 if r[14].value != new_ip:
-                    self.textEdit.append(str(i + 3) + ' 行: ' + str(r[14].value) + ' 替换为 ' + new_ip)
+                    self.textEdit.append(str(i + 3) + ' 行: ' + str(r[14].value) + ' ===> ' + new_ip)
                     r[14].value = new_ip
                     changed |= True
                 else:
@@ -178,7 +185,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_prj)
         wb.close()
         self.textEdit.append('项目立项表IP更新完成。 <font color="green"><b>' + str(match) + ' </b></font> 项条目匹配。')
-
 
     def checkpat2(self, doc, prj):
         match = 0
@@ -210,16 +216,19 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             in_mem_file = io.BytesIO(f.read())
         wb = load_workbook(in_mem_file, read_only=True, data_only=True)
         ws = wb.active
-        max_row_num = ws.max_row
-        range_cell = ws[f'A3:D{max_row_num}']
-        for r in range_cell:
-            if r[0].value is None:
-                break
-            p_order = str(r[0].value).strip().zfill(2)
-            p_name = str(r[1].value).strip()
-            p_patnum = str(r[3].value).strip()
-            self.pat_dict[p_name] = p_order
-            self.pat_dict2[p_name] = p_patnum
+        if ws is not None:
+            max_row_num = ws.max_row
+            range_cell = ws[f'A3:D{max_row_num}']
+            for r in range_cell:
+                if r[0].value is None:
+                    break
+                p_order = str(r[0].value).strip().zfill(2)
+                p_name = str(r[1].value).strip()
+                p_patnum = str(r[3].value).strip()
+                self.pat_dict[p_name] = p_order
+                self.pat_dict2[p_name] = p_patnum
+        else:
+            self.textEdit.append('Error ' + self.file_pat + ' 文件格式错误。')
         wb.close()
 
         self.arr_prj.clear()
@@ -228,32 +237,35 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             in_mem_file = io.BytesIO(f.read())
         wb = load_workbook(in_mem_file, read_only=True, data_only=True)
         ws = wb.active
-        if str(ws['A1'].value).find(u'公司') != -1:
-            com_name = str(ws['A1'].value).split("公司")[0] + '公司'
+        if ws is not None:
+            if str(ws['A1'].value).find(u'公司') != -1:
+                com_name = str(ws['A1'].value).split("公司")[0] + '公司'
+            else:
+                self.textEdit.append("Error: 找不到 公司名")
+            max_row_num = ws.max_row
+            range_cell = ws[f'A3:P{max_row_num}']
+            for r in range_cell:
+                if r[0].value is None:
+                    break
+                project = Project()
+                project.p_comname = com_name
+                project.p_order = str(r[0].value).strip().zfill(2)
+                project.p_name = str(r[1].value).strip()  # 项目名称
+                project.p_start = r[2].value.strftime('%Y-%m-%d')
+                project.p_end = r[3].value.strftime('%Y-%m-%d')
+                project.p_cost = str(r[5].value).strip()
+                project.p_people = str(r[6].value).strip()  # 人数
+                project.p_owner = str(r[7].value).strip()  # 项目负责人
+                project.p_rnd = str(r[8].value).strip()  # 研发人员
+                project.p_money = str(r[9].value).strip()  # 总预算
+                project.pat_list = str(r[11].value).strip()  # 知识产权名称
+                project.ip_list = str(r[14].value).strip()  # IP
+                self.arr_prj.append(project)
         else:
-            print("Error: 找不到 公司名")
-        max_row_num = ws.max_row
-        range_cell = ws[f'A3:P{max_row_num}']
-        for r in range_cell:
-            if r[0].value is None:
-                break
-            project = util.Project()
-            project.p_comname = com_name
-            project.p_order = str(r[0].value).strip().zfill(2)
-            project.p_name = str(r[1].value).strip()  # 项目名称
-            project.p_start = r[2].value.strftime('%Y-%m-%d')
-            project.p_end = r[3].value.strftime('%Y-%m-%d')
-            project.p_cost = str(r[5].value).strip()
-            project.p_people = str(r[6].value).strip()  # 人数
-            project.p_owner = str(r[7].value).strip()  # 项目负责人
-            project.p_rnd = str(r[8].value).strip()  # 研发人员
-            project.p_money = str(r[9].value).strip()  # 总预算
-            project.pat_list = str(r[11].value).strip()  # 知识产权名称
-            project.ip_list = str(r[14].value).strip()  # IP
-            self.arr_prj.append(project)
+            self.textEdit.append('Error ' + self.file_prj + ' 文件格式错误。')
         wb.close()
         if len(self.arr_prj) == 0:
-            print("Error: 立项汇总表错误，使用Excel重新保存.")
+            self.textEdit.append("Error: 立项汇总表错误，使用Excel重新保存.")
 
     def checkall(self):
         self.textEdit.setText('')
@@ -262,6 +274,146 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.checkpatent(False)
         self.replaceprj(False)
 
+    def check_and_change(self, doc, replace):
+        """
+        遍历word中的所有 paragraphs，在每一段中发现含有key 的内容，就替换为 value 。
+        （key 和 value 都是replace_dict中的键值对。）
+        """
+        for para in doc.paragraphs:
+            for i in range(len(para.runs)):
+                for key, value in replace.items():
+                    if key in para.runs[i].text:
+                        self.textEdit.append(key + "-->" + value)
+                        para.runs[i].text = para.runs[i].text.replace(key, value)
+        return doc
+
+    def replace_tables(self, doc, replace):
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for para in cell.paragraphs:
+                        for i in range(len(para.runs)):
+                            # self.textEdit.append(">>>" + para.runs[i].text)
+                            for key, value in replace.items():
+                                if key in para.runs[i].text:
+                                    self.textEdit.append(key + "-->" + value)
+                                    para.runs[i].text = para.runs[i].text.replace(key, value)
+        return doc
+
+    @staticmethod
+    def clear_runs(runs):
+        for i, run in enumerate(runs):
+            if i > 0:
+                run.clear()
+        return runs
+
+    def debug_doc(self, doc):
+        for i, sect in enumerate(doc.sections):
+            for j, para in enumerate(sect.header.paragraphs):
+                self.textEdit.append(f'Sec.{i} Para.{j} : ', para.text, sep='')
+                for k, run in enumerate(para.runs):
+                    self.textEdit.append(f'Sec.{i} Para.{j} Run{k}: ', run.text, sep='')
+        for i, para in enumerate(doc.paragraphs):
+            self.textEdit.append(f'Para.{i} : ', para.text, sep='')
+            for j, run in enumerate(para.runs):
+                self.textEdit.append(f'Para.{i} Run{j}: ', run.text, sep='')
+        for i, table in enumerate(doc.tables):
+            for j, row in enumerate(table.rows):
+                for k, cell in enumerate(row.cells):
+                    for l, para in enumerate(cell.paragraphs):
+                        self.textEdit.append(f'Table.{i} Row.{j} Cell{k} Para.{l} : ', para.text, sep='')
+                        # for j, run in enumerate(para.runs):
+                        #     self.textEdit.append(f'Para.{i} Run{j}: ', run.text, sep='')
+
+    def replace_header(self, doc, prj):
+        self.check_replace(doc.sections[0].header.paragraphs, '.*公司', prj.com_name)
+
+    def first_table(self, doc, prj):
+        match = 0
+        if doc.tables[0].rows[0].cells[0].paragraphs[0].text == '项目名称：':
+            doc.tables[0].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
+            self.clear_runs(doc.tables[0].rows[0].cells[1].paragraphs[0].runs)
+            match = match + 1
+        if doc.tables[0].rows[1].cells[0].paragraphs[0].text == '项目编号：':
+            doc.tables[0].rows[1].cells[1].paragraphs[0].runs[0].text = prj.p_start[0:4] + 'RD' + prj.p_order
+            self.clear_runs(doc.tables[0].rows[1].cells[1].paragraphs[0].runs)
+            match = match + 1
+        if doc.tables[0].rows[2].cells[0].paragraphs[0].text == '项目负责人：' and prj.p_owner != 'None':
+            doc.tables[0].rows[2].cells[1].paragraphs[0].runs[0].text = prj.p_owner
+            self.clear_runs(doc.tables[0].rows[2].cells[1].paragraphs[0].runs)
+            match = match + 1
+        if doc.tables[0].rows[3].cells[0].paragraphs[0].text == '项目周期：':
+            doc.tables[0].rows[3].cells[1].paragraphs[0].runs[0].text = prj.p_start + '至' + prj.p_end
+            self.clear_runs(doc.tables[0].rows[3].cells[1].paragraphs[0].runs)
+            match = match + 1
+        return match
+
+    def start_time(self, doc, prj):
+        match = self.check_replace(doc.paragraphs, '申请立项时间：\d{4}[-/]\d{1,2}[-/]\d{1,2}',
+                                   '申请立项时间：' + prj.p_start)
+        return match
+
+    def second_table(self, doc, prj):
+        match = 0
+        if doc.tables[1].rows[0].cells[0].paragraphs[0].text == '项目立项名称':
+            doc.tables[1].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
+            self.clear_runs(doc.tables[1].rows[0].cells[1].paragraphs[0].runs)
+            match = match + 1
+
+        match = match + self.check_replace(doc.tables[1].rows[1].cells[1].paragraphs
+                                           , '项目团队由(.*)人组成，项目实施周期为(.*)个月。'
+                                           ,
+                                           '项目团队由' + prj.p_people + '人组成，项目实施周期为' + prj.p_cost + '个月。')
+        match = match + self.check_replace(doc.tables[1].rows[6].cells[1].paragraphs
+                                           , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}',
+                                           prj.p_start + '至' + prj.p_end)
+        match = match + self.check_replace(doc.tables[1].rows[7].cells[1].paragraphs
+                                           , '项目总资金预算.*万元', '项目总资金预算' + prj.p_money + '万元')
+
+        match = match + self.check_replace(doc.tables[1].rows[8].cells[1].paragraphs
+                                           , '项目总人数：.*人', '项目总人数：' + prj.p_people + '人')
+        if prj.p_owner != 'None':
+            match = match + self.check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '项目负责人：.*',
+                                               '项目负责人：' + prj.p_owner)
+        if prj.p_rnd != 'None':
+            match = match + self.check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '研发成员：.*',
+                                               '研发成员：' + prj.p_rnd)
+        match = match + self.check_replace(doc.tables[1].rows[9].cells[1].paragraphs, '\d{4}[-/]\d{1,2}[-/]\d{1,2}',
+                                           prj.p_start)
+
+        return match
+
+    def check_replace(self, paras, regex, dst):
+        match = 0
+        for i, para in enumerate(paras):
+            result = re.search(regex, para.text)
+            if result is not None:
+                if result.group() != dst:
+                    self.textEdit.append(result.group() + ' ===> ' + dst)
+                    para.runs[0].text = re.sub(regex, dst,
+                                               para.text)
+                    self.clear_runs(para.runs)
+                match = match + 1
+                break  # 只替换一次就够用
+        return match
+
+    def third_table(self, doc, prj):
+        match = 0
+        if doc.tables[2].rows[0].cells[0].paragraphs[0].text == '项目名称':
+            doc.tables[2].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
+            self.clear_runs(doc.tables[1].rows[0].cells[1].paragraphs[0].runs)
+            match = match + 1
+        match = match + self.check_replace(doc.tables[2].rows[1].cells[1].paragraphs
+                                           , '\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
+        match = match + self.check_replace(doc.tables[2].rows[2].cells[1].paragraphs
+                                           , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}',
+                                           prj.p_start + '至' + prj.p_end)
+
+        if prj.p_owner != 'None':
+            doc.tables[2].rows[3].cells[1].paragraphs[0].runs[0].text = prj.p_owner
+            self.clear_runs(doc.tables[2].rows[3].cells[1].paragraphs[0].runs)
+            match = match + 1
+        return match
 
 
 if __name__ == "__main__":
