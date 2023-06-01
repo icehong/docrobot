@@ -1,3 +1,4 @@
+import io
 import os
 import re
 import sys
@@ -9,7 +10,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
 from docx import Document
 from docx.opc.exceptions import PackageNotFoundError
 from openpyxl.reader.excel import load_workbook
-from win32com.client import Dispatch
+from win32com.client import DispatchEx
 
 from docrobot import util
 from docrobot.form import Ui_MainWindow
@@ -164,11 +165,15 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         try:
             if changed and modify:
                 wb.save(self.file_prj)
-                xl_app = Dispatch("Excel.Application")
+                xl_app = DispatchEx("Excel.Application")
                 xl_app.Visible = False
                 xl_app.DisplayAlerts = False
                 xl_book = xl_app.Workbooks.Open(self.file_prj)
+                xl_book.Saved = False
                 xl_book.Close(True)
+                xl_book = None
+                xl_app.Quit()
+                xl_app = None
         except PermissionError:
             self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_prj)
         wb.close()
@@ -201,7 +206,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def update_data(self):
         self.pat_dict.clear()
         self.pat_dict2.clear()
-        wb = load_workbook(self.file_pat, read_only=True, data_only=True)
+        with open(self.file_pat, "rb") as f:
+            in_mem_file = io.BytesIO(f.read())
+        wb = load_workbook(in_mem_file, read_only=True, data_only=True)
         ws = wb.active
         max_row_num = ws.max_row
         range_cell = ws[f'A3:D{max_row_num}']
@@ -217,7 +224,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         self.arr_prj.clear()
         com_name = 'XX公司'
-        wb = load_workbook(self.file_prj, read_only=True, data_only=True)
+        with open(self.file_prj, "rb") as f:
+            in_mem_file = io.BytesIO(f.read())
+        wb = load_workbook(in_mem_file, read_only=True, data_only=True)
         ws = wb.active
         if str(ws['A1'].value).find(u'公司') != -1:
             com_name = str(ws['A1'].value).split("公司")[0] + '公司'
@@ -243,6 +252,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             project.ip_list = str(r[14].value).strip()  # IP
             self.arr_prj.append(project)
         wb.close()
+        if len(self.arr_prj) == 0:
+            print("Error: 立项汇总表错误，使用Excel重新保存.")
 
     def checkall(self):
         self.textEdit.setText('')
