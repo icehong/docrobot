@@ -8,3 +8,4 @@ workdir*
 /build/
 /dist/
 /docrobot.zip
+/src/docrobot/config.ini
