@@ -127,8 +127,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 self.textEdit.append('Error打开文件错误：' + doc_name)
             except PermissionError:
                 self.textEdit.append('Error 保存文件错误，可能是文件已被打开：' + doc_name)
-            self.textEdit.append(project.p_order + ' 项目：处理完成。 <font color="green"><b>'
-                                 + str(match) + ' </b></font> 项条目匹配。')
+            # 基础17项替换和检查 + N项专利
+            needmatch = 17 + len(project.pat_list.splitlines())
+            if needmatch - match > 0:
+                self.textEdit.append(project.p_order + ' 项目检查完成。 <font color="red"><b>'
+                                     + str(needmatch - match) + ' </b></font> 项条目不匹配。')
+            else:
+                self.textEdit.append(project.p_order + ' 项目检查完成。 <font color="green"><b>'
+                                     + str(match) + ' </b></font> 项条目完全匹配。')
 
     def checkpatent(self, modify=False):
         if modify:
@@ -338,7 +344,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             doc.tables[0].rows[1].cells[1].paragraphs[0].runs[0].text = prj.p_start[0:4] + 'RD' + prj.p_order
             self.clear_runs(doc.tables[0].rows[1].cells[1].paragraphs[0].runs)
             match = match + 1
-        if doc.tables[0].rows[2].cells[0].paragraphs[0].text == '项目负责人：' and prj.p_owner != 'None':
+        if doc.tables[0].rows[2].cells[0].paragraphs[0].text == '项目负责人：':
             doc.tables[0].rows[2].cells[1].paragraphs[0].runs[0].text = prj.p_owner
             self.clear_runs(doc.tables[0].rows[2].cells[1].paragraphs[0].runs)
             match = match + 1
@@ -389,11 +395,12 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             result = re.search(regex, para.text)
             if result is not None:
                 if result.group() != dst:
-                    self.textEdit.append(result.group() + ' ===> ' + dst)
+                    self.textEdit.append(str(result.group()) + ' ===> ' + dst)
                     para.runs[0].text = re.sub(regex, dst,
                                                para.text)
                     self.clear_runs(para.runs)
-                match = match + 1
+                else:
+                    match = match + 1
                 break  # 只替换一次就够用
         return match
 
