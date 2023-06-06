@@ -349,7 +349,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         return match
 
     def start_time(self, doc, prj):
-        match = self.check_replace(doc.paragraphs, '申请立项时间：\d{4}[-/]\d{1,2}[-/]\d{1,2}',
+        match = self.check_replace(doc.paragraphs, '申请立项时间：\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                    '申请立项时间：' + prj.p_start)
         return match
 
@@ -365,7 +365,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                                            ,
                                            '项目团队由' + prj.p_people + '人组成，项目实施周期为' + prj.p_cost + '个月。')
         match = match + self.check_replace(doc.tables[1].rows[6].cells[1].paragraphs
-                                           , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}',
+                                           , '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                            prj.p_start + '至' + prj.p_end)
         match = match + self.check_replace(doc.tables[1].rows[7].cells[1].paragraphs
                                            , '项目总资金预算.*万元', '项目总资金预算' + prj.p_money + '万元')
@@ -378,7 +378,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if prj.p_rnd != 'None':
             match = match + self.check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '研发成员：.*',
                                                '研发成员：' + prj.p_rnd)
-        match = match + self.check_replace(doc.tables[1].rows[9].cells[1].paragraphs, '\d{4}[-/]\d{1,2}[-/]\d{1,2}',
+        match = match + self.check_replace(doc.tables[1].rows[9].cells[1].paragraphs, '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                            prj.p_start)
 
         return match
@@ -404,9 +404,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.clear_runs(doc.tables[1].rows[0].cells[1].paragraphs[0].runs)
             match = match + 1
         match = match + self.check_replace(doc.tables[2].rows[1].cells[1].paragraphs
-                                           , '\d{4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
+                                           , '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
         match = match + self.check_replace(doc.tables[2].rows[2].cells[1].paragraphs
-                                           , '\d{4}[-/]\d{1,2}[-/]\d{1,2}至\d{4}[-/]\d{1,2}[-/]\d{1,2}',
+                                           , '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                            prj.p_start + '至' + prj.p_end)
 
         if prj.p_owner != 'None':
