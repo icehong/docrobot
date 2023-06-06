@@ -401,7 +401,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         match = 0
         if doc.tables[2].rows[0].cells[0].paragraphs[0].text == '项目名称':
             doc.tables[2].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
-            self.clear_runs(doc.tables[1].rows[0].cells[1].paragraphs[0].runs)
+            self.clear_runs(doc.tables[2].rows[0].cells[1].paragraphs[0].runs)
             match = match + 1
         match = match + self.check_replace(doc.tables[2].rows[1].cells[1].paragraphs
                                            , '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
