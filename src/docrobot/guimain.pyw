@@ -366,18 +366,17 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.clear_runs(doc.tables[1].rows[0].cells[1].paragraphs[0].runs)
             match = match + 1
 
-        match = match + self.check_replace(doc.tables[1].rows[1].cells[1].paragraphs
-                                           , '项目团队由(.*)人组成，项目实施周期为(.*)个月。'
-                                           ,
+        match = match + self.check_replace(doc.tables[1].rows[1].cells[1].paragraphs,
+                                           '项目团队由(.*)人组成，项目实施周期为(.*)个月。',
                                            '项目团队由' + prj.p_people + '人组成，项目实施周期为' + prj.p_cost + '个月。')
-        match = match + self.check_replace(doc.tables[1].rows[6].cells[1].paragraphs
-                                           , '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
+        match = match + self.check_replace(doc.tables[1].rows[6].cells[1].paragraphs,
+                                           '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                            prj.p_start + '至' + prj.p_end)
-        match = match + self.check_replace(doc.tables[1].rows[7].cells[1].paragraphs
-                                           , '项目总资金预算.*万元', '项目总资金预算' + prj.p_money + '万元')
+        match = match + self.check_replace(doc.tables[1].rows[7].cells[1].paragraphs,
+                                           '项目总资金预算.*万元', '项目总资金预算' + prj.p_money + '万元')
 
-        match = match + self.check_replace(doc.tables[1].rows[8].cells[1].paragraphs
-                                           , '项目总人数：.*人', '项目总人数：' + prj.p_people + '人')
+        match = match + self.check_replace(doc.tables[1].rows[8].cells[1].paragraphs,
+                                           '项目总人数：.*人', '项目总人数：' + prj.p_people + '人')
         if prj.p_owner != 'None':
             match = match + self.check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '项目负责人：.*',
                                                '项目负责人：' + prj.p_owner)
@@ -410,10 +409,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             doc.tables[2].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
             self.clear_runs(doc.tables[2].rows[0].cells[1].paragraphs[0].runs)
             match = match + 1
-        match = match + self.check_replace(doc.tables[2].rows[1].cells[1].paragraphs
-                                           , '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
-        match = match + self.check_replace(doc.tables[2].rows[2].cells[1].paragraphs
-                                           , '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
+        match = match + self.check_replace(doc.tables[2].rows[1].cells[1].paragraphs,
+                                           '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
+        match = match + self.check_replace(doc.tables[2].rows[2].cells[1].paragraphs,
+                                           '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                            prj.p_start + '至' + prj.p_end)
 
         if prj.p_owner != 'None':
