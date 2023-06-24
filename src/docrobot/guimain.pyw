@@ -142,6 +142,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.update_data()
 
         match = 0  # 已匹配条目数
+        unmatch = 0  # 已匹配条目数
         changed = False
         wb = load_workbook(self.file_prj)
         ws = wb.active
@@ -151,13 +152,15 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         for r in range_cell:
             if r[11].value is None:
                 break
-            pat_name = str(r[11].value).strip()
 
+            pat_name = str(r[11].value).strip()
+            # 检查专利IP号
             if pat_name == '无':
                 if r[14].value != '无':
-                    self.textEdit.append(str(i + 3) + ' 行: ' + str(r[14].value) + ' ===> ' + '无')
+                    self.textEdit.append(self.arr_prj[i].p_order + ' 项目: ' + str(r[14].value) + ' ===> ' + '无')
                     r[14].value = pat_name
                     changed |= True
+                    unmatch = unmatch + 1
                 else:
                     match = match + 1
             else:
@@ -169,9 +172,23 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 rep = map(lambda e: 'IP' + e, rep)
                 new_ip = ';'.join(rep)
                 if r[14].value != new_ip:
-                    self.textEdit.append(str(i + 3) + ' 行: ' + str(r[14].value) + ' ===> ' + new_ip)
+                    self.textEdit.append(self.arr_prj[i].p_order + ' 项目: ' + str(r[14].value) + ' ===> ' + new_ip)
                     r[14].value = new_ip
                     changed |= True
+                    unmatch = unmatch + 1
+                else:
+                    match = match + 1
+
+            # 检查和替换项目人数
+            rnd_name = str(r[8].value).strip()
+            if not rnd_name.endswith('等'):
+                real_num = len(rnd_name.split('、'))
+                if real_num != int(r[6].value):
+                    self.textEdit.append(self.arr_prj[i].p_order + ' 项目: ' + '研发人员名字数量不匹配:' + rnd_name)
+                    self.textEdit.append('研发人数: ' + str(r[6].value) + ' ===> ' + str(real_num))
+                    r[6].value = real_num
+                    changed |= True
+                    unmatch = unmatch + 1
                 else:
                     match = match + 1
             i = i + 1
@@ -191,6 +208,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_prj)
         wb.close()
         self.textEdit.append('项目立项表IP更新完成。 <font color="green"><b>' + str(match) + ' </b></font> 项条目匹配。')
+        if unmatch != 0:
+            self.textEdit.append(' <font color="red"><b>' + str(unmatch) + ' </b></font> 项条目不匹配。')
 
     def checkpat2(self, doc, prj):
         match = 0
