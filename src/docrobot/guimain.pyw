@@ -112,8 +112,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 doc_name = self.workdir + '/RD' + project.p_order + project.p_name + '.docx'
                 document = Document(doc_name)
                 # debug_doc(document)
-                # TODO to be fixed
-                # replace_header(document)
+                match = match + self.replace_comname(document, project)
                 match = match + self.first_table(document, project)
                 match = match + self.start_time(document, project)
                 match = match + self.second_table(document, project)
@@ -350,8 +349,39 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                         # for j, run in enumerate(para.runs):
                         #     self.textEdit.append(f'Para.{i} Run{j}: ', run.text, sep='')
 
-    def replace_header(self, doc, prj):
-        self.check_replace(doc.sections[0].header.paragraphs, '.*公司', prj.com_name)
+    def replace_comname(self, doc, prj):
+        match = 0
+        para = doc.sections[0].header.paragraphs[0]
+        oldname = para.text.strip()
+
+        if prj.p_comname in para.text:
+            match = match +1
+        else:
+            self.textEdit.append(oldname + ' ===> ' + prj.p_comname)
+            # TODO 这个地方还有个问题， 先用临时凑合一下
+            # found = False
+            # for i, run in enumerate(para.runs):
+            #     if found:
+            #         run.clear()
+            #     if run.text != '':
+            #         run.text = '\t\t' + prj.p_comname
+            #         found = True
+            for i, run in enumerate(para.runs):
+                if run.text == oldname:
+                    run.text = prj.p_comname
+                    self.textEdit.append(oldname + ' ===> ' + prj.p_comname)
+                    match = match + 1
+        match = match + self.check_replace(doc.paragraphs, oldname, prj.p_comname)
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    match = match + self.check_replace(cell.paragraphs, oldname, prj.p_comname)
+
+        # 检查其他可能的未替换的内容，例如去掉深圳，有限公司等
+        # TODO
+
+        return match
+
 
     def first_table(self, doc, prj):
         match = 0
