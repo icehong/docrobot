@@ -180,8 +180,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
             # 检查和替换项目人数
             rnd_name = str(r[8].value).strip()
-            if not rnd_name.endswith('等'):
+            if rnd_name != '' and not rnd_name.endswith('等'):
                 real_num = len(rnd_name.split('、'))
+                real_num = real_num + 1
                 if real_num != int(r[6].value):
                     self.textEdit.append(self.arr_prj[i].p_order + ' 项目: ' + '研发人员名字数量不匹配:' + rnd_name)
                     self.textEdit.append('研发人数: ' + str(r[6].value) + ' ===> ' + str(real_num))
