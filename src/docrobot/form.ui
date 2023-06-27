@@ -18,34 +18,59 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>40</y>
+      <y>100</y>
       <width>781</width>
-      <height>521</height>
+      <height>461</height>
      </rect>
     </property>
    </widget>
-   <widget class="QLabel" name="label">
+   <widget class="QGroupBox" name="groupBoxPrj">
+    <property name="geometry">
+     <rect>
+      <x>9</x>
+      <y>40</y>
+      <width>251</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>立项报告选项</string>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="groupBoxPat">
+    <property name="geometry">
+     <rect>
+      <x>270</x>
+      <y>40</y>
+      <width>521</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>项目文档选项</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>91</width>
-      <height>16</height>
+      <width>781</width>
+      <height>22</height>
      </rect>
     </property>
-    <property name="text">
-     <string>当前处理目录：</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEdit">
-    <property name="geometry">
-     <rect>
-      <x>100</x>
-      <y>10</y>
-      <width>691</width>
-      <height>20</height>
-     </rect>
-    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>当前处理目录：</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineEdit"/>
+     </item>
+    </layout>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -53,8 +78,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
-     <height>26</height>
+     <width>797</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -81,6 +106,7 @@
     </property>
     <addaction name="separator"/>
     <addaction name="actioncheckall"/>
+    <addaction name="actionsearchall"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_4"/>
@@ -106,6 +132,11 @@
   <action name="actioncheckall">
    <property name="text">
     <string>检查所有项</string>
+   </property>
+  </action>
+  <action name="actionsearchall">
+   <property name="text">
+    <string>全文搜索</string>
    </property>
   </action>
  </widget>
