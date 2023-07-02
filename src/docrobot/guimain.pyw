@@ -141,11 +141,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             except PermissionError:
                 self.textEdit.append('Error 保存文件错误，可能是文件已被打开：' + doc_name)
 
+            prompt = project.p_order + ' 项目检查完成。 <font color="green"><b>' + str(
+                checkr.match) + ' </b></font> 项匹配。'
             if checkr.unmatch > 0:
-                self.textEdit.append(project.p_order + ' 项目检查完成。 <font color="red"><b>'
-                                     + str(checkr.unmatch) + ' </b></font> 项条目不匹配。')
-            self.textEdit.append(project.p_order + ' 项目检查完成。 <font color="green"><b>'
-                                 + str(checkr.match) + ' </b></font> 项条目匹配。')
+                prompt = prompt + ' <font color="red"><b>' + str(checkr.unmatch) + ' </b></font> 项不匹配。'
+            self.textEdit.append(prompt)
 
     def checkpatent(self, modify=False):
         if modify:
@@ -219,9 +219,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         except PermissionError:
             self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_prj)
         wb.close()
-        self.textEdit.append('项目立项表IP更新完成。 <font color="green"><b>' + str(match) + ' </b></font> 项条目匹配。')
+
+        prompt = '项目立项表IP更新完成。 <font color="green"><b>' + str(match) + ' </b></font> 项条目匹配。'
         if unmatch != 0:
-            self.textEdit.append(' <font color="red"><b>' + str(unmatch) + ' </b></font> 项条目不匹配。')
+            prompt = prompt + ' <font color="red"><b>' + str(unmatch) + ' </b></font> 项条目不匹配。'
+        self.textEdit.append(prompt)
 
     def checkpat2(self, doc, prj):
         match = unmatch = 0
@@ -320,33 +322,26 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         text, ok = QInputDialog.getText(self, "全项目查找",
                                         "查找内容:", QLineEdit.Normal)
         if ok and text:
-            self.textEdit.setText(text)
+            for project in self.arr_prj:
+                # self.textEdit.append(project.p_order + ' 项目开始处理...')
+                checkr = CheckR()  # 已匹配条目数
+                doc_name = ''
+                try:
+                    doc_name = self.workdir + '/RD' + project.p_order + project.p_name + '.docx'
+                    document = Document(doc_name)
+                    checkr = checkr + self.findindoc(document, text)
+                    # if modify:
+                    #     document.save(doc_name)
+                except PackageNotFoundError:
+                    self.textEdit.append('Error打开文件错误：' + doc_name)
+                except PermissionError:
+                    self.textEdit.append('Error保存文件错误，可能是文件已被打开：' + doc_name)
 
-    def check_and_change(self, doc, replace):
-        """
-        遍历word中的所有 paragraphs，在每一段中发现含有key 的内容，就替换为 value 。
-        （key 和 value 都是replace_dict中的键值对。）
-        """
-        for para in doc.paragraphs:
-            for i in range(len(para.runs)):
-                for key, value in replace.items():
-                    if key in para.runs[i].text:
-                        self.textEdit.append(key + "-->" + value)
-                        para.runs[i].text = para.runs[i].text.replace(key, value)
-        return doc
-
-    def replace_tables(self, doc, replace):
-        for table in doc.tables:
-            for row in table.rows:
-                for cell in row.cells:
-                    for para in cell.paragraphs:
-                        for i in range(len(para.runs)):
-                            # self.textEdit.append(">>>" + para.runs[i].text)
-                            for key, value in replace.items():
-                                if key in para.runs[i].text:
-                                    self.textEdit.append(key + "-->" + value)
-                                    para.runs[i].text = para.runs[i].text.replace(key, value)
-        return doc
+                prompt = project.p_order + ' 项目检查完成。 <font color="green"><b>' + str(
+                    checkr.match) + ' </b></font> 项匹配。'
+                if checkr.unmatch > 0:
+                    prompt = prompt + ' <font color="red"><b>' + str(checkr.unmatch) + ' </b></font> 项不匹配。'
+                self.textEdit.append(prompt)
 
     @staticmethod
     def clear_runs(runs):
@@ -372,6 +367,33 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                         self.textEdit.append(f'Table.{i} Row.{j} Cell{k} Para.{l} : ', para.text, sep='')
                         # for j, run in enumerate(para.runs):
                         #     self.textEdit.append(f'Para.{i} Run{j}: ', run.text, sep='')
+
+    def findindoc(self, doc, keyword):
+        match = 0
+        for i, sect in enumerate(doc.sections):
+            for j, para in enumerate(sect.header.paragraphs):
+                if keyword in para.text:
+                    match = match + 1
+                    newstr = para.text.replace(keyword, f'<font color="red"><b>{keyword}</b></font>')
+                    self.textEdit.append(f'节.{i} 段.{j} : {newstr}')
+                # for k, run in enumerate(para.runs):
+                #     self.textEdit.append(f'Sec.{i} Para.{j} Run{k}: ', run.text, sep='')
+        for i, para in enumerate(doc.paragraphs):
+            if keyword in para.text:
+                match = match + 1
+                newstr = para.text.replace(keyword, f'<font color="red"><b>{keyword}</b></font>')
+                self.textEdit.append(f'段.{i} : {newstr}')
+                # for j, run in enumerate(para.runs):
+                #     self.textEdit.append(f'段.{i} Run{j}: ', run.text, sep='')
+        for i, table in enumerate(doc.tables):
+            for j, row in enumerate(table.rows):
+                for k, cell in enumerate(row.cells):
+                    for l, para in enumerate(cell.paragraphs):
+                        if keyword in para.text:
+                            match = match + 1
+                            newstr = para.text.replace(keyword, f'<font color="red"><b>{keyword}</b></font>')
+                            self.textEdit.append(f'表.{i} 行.{j} 列{k} 段.{l} : {newstr}')
+        return CheckR(match, 0)
 
     def replace_comname(self, doc, prj):
         match = unmatch = 0
@@ -495,10 +517,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         else:
             unmatch = unmatch + 1
         checkr = CheckR(match, unmatch) + self.check_replace(doc.tables[2].rows[1].cells[1].paragraphs,
-                                           '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
+                                                             '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
         checkr = checkr + self.check_replace(doc.tables[2].rows[2].cells[1].paragraphs,
-                                           '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
-                                           prj.p_start + '至' + prj.p_end)
+                                             '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
+                                             prj.p_start + '至' + prj.p_end)
 
         if prj.p_owner != 'None':
             doc.tables[2].rows[3].cells[1].paragraphs[0].runs[0].text = prj.p_owner

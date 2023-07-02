@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>632</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,36 +18,10 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>100</y>
+      <y>40</y>
       <width>781</width>
-      <height>461</height>
+      <height>551</height>
      </rect>
-    </property>
-   </widget>
-   <widget class="QGroupBox" name="groupBoxPrj">
-    <property name="geometry">
-     <rect>
-      <x>9</x>
-      <y>40</y>
-      <width>251</width>
-      <height>51</height>
-     </rect>
-    </property>
-    <property name="title">
-     <string>立项报告选项</string>
-    </property>
-   </widget>
-   <widget class="QGroupBox" name="groupBoxPat">
-    <property name="geometry">
-     <rect>
-      <x>270</x>
-      <y>40</y>
-      <width>521</width>
-      <height>51</height>
-     </rect>
-    </property>
-    <property name="title">
-     <string>项目文档选项</string>
     </property>
    </widget>
    <widget class="QWidget" name="layoutWidget">
@@ -78,7 +52,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>797</width>
+     <width>800</width>
      <height>22</height>
     </rect>
    </property>
@@ -90,13 +64,13 @@
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
-     <string>项目</string>
+     <string>项目文档</string>
     </property>
     <addaction name="actionreplace"/>
    </widget>
    <widget class="QMenu" name="menu_3">
     <property name="title">
-     <string>专利</string>
+     <string>立项总表</string>
     </property>
     <addaction name="actioncheck"/>
    </widget>
@@ -121,7 +95,7 @@
   </action>
   <action name="actioncheck">
    <property name="text">
-    <string>检查</string>
+    <string>替换</string>
    </property>
   </action>
   <action name="actionreplace">

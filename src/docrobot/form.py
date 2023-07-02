@@ -16,15 +16,15 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QIcon, QImage, QKeySequence, QLinearGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
-from PySide6.QtWidgets import (QApplication, QGroupBox, QHBoxLayout, QLabel,
-    QLineEdit, QMainWindow, QMenu, QMenuBar,
-    QSizePolicy, QStatusBar, QTextEdit, QWidget)
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QLineEdit,
+    QMainWindow, QMenu, QMenuBar, QSizePolicy,
+    QStatusBar, QTextEdit, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(800, 600)
+        MainWindow.resize(800, 632)
         self.actionSelect_Dir = QAction(MainWindow)
         self.actionSelect_Dir.setObjectName(u"actionSelect_Dir")
         self.actioncheck = QAction(MainWindow)
@@ -39,13 +39,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.textEdit = QTextEdit(self.centralwidget)
         self.textEdit.setObjectName(u"textEdit")
-        self.textEdit.setGeometry(QRect(10, 100, 781, 461))
-        self.groupBoxPrj = QGroupBox(self.centralwidget)
-        self.groupBoxPrj.setObjectName(u"groupBoxPrj")
-        self.groupBoxPrj.setGeometry(QRect(9, 40, 251, 51))
-        self.groupBoxPat = QGroupBox(self.centralwidget)
-        self.groupBoxPat.setObjectName(u"groupBoxPat")
-        self.groupBoxPat.setGeometry(QRect(270, 40, 521, 51))
+        self.textEdit.setGeometry(QRect(10, 40, 781, 551))
         self.layoutWidget = QWidget(self.centralwidget)
         self.layoutWidget.setObjectName(u"layoutWidget")
         self.layoutWidget.setGeometry(QRect(10, 10, 781, 22))
@@ -65,7 +59,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 797, 22))
+        self.menubar.setGeometry(QRect(0, 0, 800, 22))
         self.menu = QMenu(self.menubar)
         self.menu.setObjectName(u"menu")
         self.menu_2 = QMenu(self.menubar)
@@ -98,16 +92,14 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.actionSelect_Dir.setText(QCoreApplication.translate("MainWindow", u"Select Dir", None))
-        self.actioncheck.setText(QCoreApplication.translate("MainWindow", u"\u68c0\u67e5", None))
+        self.actioncheck.setText(QCoreApplication.translate("MainWindow", u"\u66ff\u6362", None))
         self.actionreplace.setText(QCoreApplication.translate("MainWindow", u"\u6279\u91cf\u66ff\u6362", None))
         self.actioncheckall.setText(QCoreApplication.translate("MainWindow", u"\u68c0\u67e5\u6240\u6709\u9879", None))
         self.actionsearchall.setText(QCoreApplication.translate("MainWindow", u"\u5168\u6587\u641c\u7d22", None))
-        self.groupBoxPrj.setTitle(QCoreApplication.translate("MainWindow", u"\u7acb\u9879\u62a5\u544a\u9009\u9879", None))
-        self.groupBoxPat.setTitle(QCoreApplication.translate("MainWindow", u"\u9879\u76ee\u6587\u6863\u9009\u9879", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u5904\u7406\u76ee\u5f55\uff1a", None))
         self.menu.setTitle(QCoreApplication.translate("MainWindow", u"\u8bbe\u7f6e", None))
-        self.menu_2.setTitle(QCoreApplication.translate("MainWindow", u"\u9879\u76ee", None))
-        self.menu_3.setTitle(QCoreApplication.translate("MainWindow", u"\u4e13\u5229", None))
+        self.menu_2.setTitle(QCoreApplication.translate("MainWindow", u"\u9879\u76ee\u6587\u6863", None))
+        self.menu_3.setTitle(QCoreApplication.translate("MainWindow", u"\u7acb\u9879\u603b\u8868", None))
         self.menu_4.setTitle(QCoreApplication.translate("MainWindow", u"\u68c0\u67e5", None))
     # retranslateUi
 
