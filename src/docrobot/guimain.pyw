@@ -28,6 +28,13 @@ class Project(object):
     p_money = ''  # 总预算
 
 
+class Patent(object):
+    p_patname = ''  # 知识产权名称
+    p_order = ''  # 序号
+    p_class = ''  # 类别
+    p_no = ''  # 专利/登记号
+
+
 class CheckR(object):
     """文档检查结果"""
 
@@ -56,9 +63,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     workdir = ''
     file_prj = ''
     file_pat = ''
-    pat_dict = {}  # 专利->序号字典
-    pat_dict2 = {}  # 专利->专利编号字典
-    arr_prj = []
+    pat_dict = {}  # 专利->序号字典   TODO 合并到dict2里面去
+    pat_dict2 = {}  # 专利->专利对象字典
+    arr_prj = []  # 项目数组
 
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -227,28 +234,40 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def checkpat2(self, doc, prj):
         match = unmatch = 0
+        pat1 = pat2 = pat3 = 0
         lst = prj.pat_list.splitlines()
         for pat_name in lst:
             if pat_name in self.pat_dict2:
-                pat_num = self.pat_dict2[pat_name]
+                pat = self.pat_dict2[pat_name]
+                check_str = '知识产权类型错误时默认字符串'
+                match pat.p_class:
+                    case '软件著作权':
+                        check_str = pat.p_name + '，登记号：' + pat.p_no
+                        pat1 = pat1 + 1
+                    case '实用新型':
+                        check_str = pat.p_name + '，授权号：' + pat.p_no
+                        pat2 = pat2 + 1
+                    case '发明':
+                        check_str = pat.p_name + '，授权号：' + pat.p_no
+                        pat3 = pat3 + 1
+                    case _:
+                        self.textEdit.append('知识产权类型错误：' + pat.p_name + '：' + pat.p_class)
                 found = False
-                regex = pat_name.replace('[', r'\[').replace(']', r'\]'.replace('(', r'\(').replace(')', r'\)'))
                 for i, para in enumerate(doc.tables[2].rows[4].cells[0].paragraphs):
-                    if re.search(regex + '，.*号：', para.text):
+                    if check_str in para.text:
                         found |= True
-                        result = re.search(regex + '，.*号：' + pat_num, para.text)
-                        if result is None:
-                            unmatch = unmatch + 1
-                            self.textEdit.append('专利名和编号不匹配：' + pat_name + ' , ' + pat_num)
-                            self.textEdit.append('文档内容：' + para.text)
-                        else:
-                            match = match + 1
+                        match = match + 1
                 if not found:
                     unmatch = unmatch + 1
-                    self.textEdit.append('全文找不到：' + pat_name)
+                    self.textEdit.append('全文找不到：' + check_str)
             elif pat_name != "无":
                 unmatch = unmatch + 1
-                self.textEdit.append('Error没有找到专利：' + pat_name)
+                self.textEdit.append('没有找到知识产权：' + pat_name)
+
+        #  TODO  统计软件、发明件数， 检查总数
+        # if pat1 != 0:
+        #    check_replace(self, doc.tables[2].rows[4].cells[0].paragraphs, regex, dst)
+
         return CheckR(match, unmatch)
 
     def update_data(self):
@@ -264,11 +283,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             for r in range_cell:
                 if r[0].value is None:
                     break
-                p_order = str(r[0].value).strip().zfill(2)
-                p_name = str(r[1].value).strip()
-                p_patnum = str(r[3].value).strip()
-                self.pat_dict[p_name] = p_order
-                self.pat_dict2[p_name] = p_patnum
+                pat = Patent()
+                pat.p_order = str(r[0].value).strip().zfill(2)
+                pat.p_name = str(r[1].value).strip()
+                pat.p_class = str(r[2].value).strip()
+                pat.p_no = str(r[3].value).strip()
+                self.pat_dict[pat.p_name] = pat.p_order
+                self.pat_dict2[pat.p_name] = pat
         else:
             self.textEdit.append('Error ' + self.file_pat + ' 文件格式错误。')
         wb.close()
