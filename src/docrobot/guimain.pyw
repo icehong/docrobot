@@ -451,47 +451,20 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         return checkr
 
     def first_table(self, doc, prj):
-        match = unmatch = 0
-        if doc.tables[0].rows[0].cells[0].paragraphs[0].text == '项目名称：':
-            doc.tables[0].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
-            self.clear_runs(doc.tables[0].rows[0].cells[1].paragraphs[0].runs)
-            match = match + 1
-        else:
-            unmatch = unmatch + 1
-        if doc.tables[0].rows[1].cells[0].paragraphs[0].text == '项目编号：':
-            doc.tables[0].rows[1].cells[1].paragraphs[0].runs[0].text = prj.p_start[0:4] + 'RD' + prj.p_order
-            self.clear_runs(doc.tables[0].rows[1].cells[1].paragraphs[0].runs)
-            match = match + 1
-        else:
-            unmatch = unmatch + 1
-        if doc.tables[0].rows[2].cells[0].paragraphs[0].text == '项目负责人：':
-            doc.tables[0].rows[2].cells[1].paragraphs[0].runs[0].text = prj.p_owner
-            self.clear_runs(doc.tables[0].rows[2].cells[1].paragraphs[0].runs)
-            match = match + 1
-        else:
-            unmatch = unmatch + 1
-        if doc.tables[0].rows[3].cells[0].paragraphs[0].text == '项目周期：':
-            doc.tables[0].rows[3].cells[1].paragraphs[0].runs[0].text = prj.p_start + '至' + prj.p_end
-            self.clear_runs(doc.tables[0].rows[3].cells[1].paragraphs[0].runs)
-            match = match + 1
-        else:
-            unmatch = unmatch + 1
-        return CheckR(match, unmatch)
+        checkr = self.check_replace_all(doc.tables[0].rows[0].cells[1].paragraphs[0], prj.p_name)
+        checkr = checkr + self.check_replace_all(doc.tables[0].rows[1].cells[1].paragraphs[0], prj.p_start[0:4] + 'RD' + prj.p_order)
+        checkr = checkr + self.check_replace_all(doc.tables[0].rows[2].cells[1].paragraphs[0], prj.p_owner)
+        checkr = checkr + self.check_replace_all(doc.tables[0].rows[3].cells[1].paragraphs[0], prj.p_start + '至' + prj.p_end)
+        return checkr
 
     def start_time(self, doc, prj):
         return self.check_replace(doc.paragraphs, '申请立项时间：\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                   '申请立项时间：' + prj.p_start)
 
     def second_table(self, doc, prj):
-        match = unmatch = 0
-        if doc.tables[1].rows[0].cells[0].paragraphs[0].text == '项目立项名称':
-            doc.tables[1].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
-            self.clear_runs(doc.tables[1].rows[0].cells[1].paragraphs[0].runs)
-            match = match + 1
-        else:
-            unmatch = unmatch + 1
+        checkr = self.check_replace_all(doc.tables[1].rows[0].cells[1].paragraphs[0], prj.p_name)
 
-        checkr = CheckR(match, unmatch) + self.check_replace(doc.tables[1].rows[1].cells[1].paragraphs,
+        checkr = checkr + self.check_replace(doc.tables[1].rows[1].cells[1].paragraphs,
                                                              '项目团队由(.*)人组成，项目实施周期为(.*)个月。',
                                                              '项目团队由' + prj.p_people + '人组成，项目实施周期为' + prj.p_cost + '个月。')
         checkr = checkr + self.check_replace(doc.tables[1].rows[6].cells[1].paragraphs,
@@ -510,7 +483,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                                                  '研发成员：' + prj.p_rnd)
         checkr = checkr + self.check_replace(doc.tables[1].rows[9].cells[1].paragraphs, '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                              prj.p_start)
-
         return checkr
 
     def check_replace(self, paras, regex, dst):
@@ -529,24 +501,26 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 break  # 只替换一次就够用
         return CheckR(match, unmatch)
 
-    def third_table(self, doc, prj):
+    def check_replace_all(self, para, dst):
+        """检查和替换掉所有内容"""
         match = unmatch = 0
-        if doc.tables[2].rows[0].cells[0].paragraphs[0].text == '项目名称':
-            doc.tables[2].rows[0].cells[1].paragraphs[0].runs[0].text = prj.p_name
-            self.clear_runs(doc.tables[2].rows[0].cells[1].paragraphs[0].runs)
-            match = match + 1
-        else:
+        if para.text != dst:
             unmatch = unmatch + 1
-        checkr = CheckR(match, unmatch) + self.check_replace(doc.tables[2].rows[1].cells[1].paragraphs,
+            self.textEdit.append(para.text + ' ===> ' + dst)
+            para.runs[0].text = dst
+            self.clear_runs(para.runs)
+        else:
+            match = match + 1
+        return CheckR(match, unmatch)
+
+    def third_table(self, doc, prj):
+        checkr = self.check_replace_all(doc.tables[2].rows[0].cells[1].paragraphs[0], prj.p_name)
+        checkr = checkr + self.check_replace(doc.tables[2].rows[1].cells[1].paragraphs,
                                                              '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
         checkr = checkr + self.check_replace(doc.tables[2].rows[2].cells[1].paragraphs,
                                              '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                              prj.p_start + '至' + prj.p_end)
-
-        if prj.p_owner != 'None':
-            doc.tables[2].rows[3].cells[1].paragraphs[0].runs[0].text = prj.p_owner
-            self.clear_runs(doc.tables[2].rows[3].cells[1].paragraphs[0].runs)
-            checkr = checkr + CheckR(1, 0)
+        checkr = checkr + self.check_replace_all(doc.tables[2].rows[3].cells[1].paragraphs[0], prj.p_owner)
         return checkr
 
 
