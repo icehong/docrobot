@@ -247,7 +247,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                     case '实用新型':
                         check_str = pat.p_name + '，授权号：' + pat.p_no
                         pat2 = pat2 + 1
-                    case '发明':
+                    case '发明专利' | '发明公布':
                         check_str = pat.p_name + '，授权号：' + pat.p_no
                         pat3 = pat3 + 1
                     case _:
