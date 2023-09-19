@@ -420,6 +420,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         match = unmatch = 0
         para = doc.sections[0].header.paragraphs[0]
         oldname = para.text.strip()
+        if oldname == '':
+            unmatch = unmatch + 1
+            self.textEdit.append('没有在页眉检测到公司名称')
+            return CheckR(match, unmatch)
 
         if prj.p_comname in para.text:
             match = match + 1
@@ -490,7 +494,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         for i, para in enumerate(paras):
             result = re.search(regex, para.text)
             if result is not None:
-                if result.group() != dst:
+                if result.group() != dst and len(para.runs) > 0:
                     unmatch = unmatch + 1
                     self.textEdit.append(str(result.group()) + ' ===> ' + dst)
                     para.runs[0].text = re.sub(regex, dst,
