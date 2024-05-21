@@ -234,7 +234,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def checkpat2(self, doc, prj):
         match = unmatch = 0
-        pat1 = pat2 = pat3 = 0
+        pat1 = pat2 = pat3 = pat4 = 0
         lst = prj.pat_list.splitlines()
         for pat_name in lst:
             if pat_name in self.pat_dict2:
@@ -250,6 +250,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                     case '发明专利' | '发明公布':
                         check_str = pat.p_name + '，授权号：' + pat.p_no
                         pat3 = pat3 + 1
+                    case '集成电路布图':
+                        check_str = pat.p_name + '，授权号：' + pat.p_no
+                        pat4 = pat4 + 1
                     case _:
                         self.textEdit.append('知识产权类型错误：' + pat.p_name + '：' + pat.p_class)
                 found = False
