@@ -2,7 +2,7 @@
 
 暂时没有啥说明
 
-安装:  pip install docrobot  
+安装:  pip install docrobot  -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
 升级： pip install --upgrade docrobot
 
 然后找到

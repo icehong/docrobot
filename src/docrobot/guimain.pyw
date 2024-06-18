@@ -1,6 +1,7 @@
 import io
 import os
 import re
+import shutil
 import sys
 from configparser import ConfigParser
 
@@ -130,7 +131,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             checkr = CheckR()  # 已匹配条目数
             doc_name = ''
             try:
-                doc_name = self.workdir + '/RD' + project.p_order + project.p_name + '.docx'
+                doc_name = self.workdir + '/RD' + project.p_order + '_' + project.p_name + '.docx'
+                old_doc_name = self.workdir + '/RD' + project.p_order + project.p_name + '.docx'
+                if os.path.isfile(old_doc_name) and not os.path.isfile(doc_name):
+                    # 如果存在，重命名文件
+                    new_file_path = 'example_renamed.txt'
+                    shutil.move(old_doc_name, doc_name)
+                    print(f'File renamed to {new_file_path}')
+
                 document = Document(doc_name)
                 # debug_doc(document)
                 checkr = checkr + self.replace_comname(document, project)
@@ -185,10 +193,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 lst = pat_name.splitlines()
                 rep = [self.pat_dict[x] if x in self.pat_dict else x for x in lst]
                 for element in rep:
-                    if re.search('^\d\d$', element) is None:
+                    if re.search(r'^\d\d$', element) is None:
                         self.textEdit.append('专利IP错误：' + element)
                 rep = map(lambda e: 'IP' + e, rep)
-                new_ip = ';'.join(rep)
+                new_ip = ','.join(rep)
                 if r[14].value != new_ip:
                     self.textEdit.append(self.arr_prj[i].p_order + ' 项目: ' + str(r[14].value) + ' ===> ' + new_ip)
                     r[14].value = new_ip
@@ -234,25 +242,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def checkpat2(self, doc, prj):
         match = unmatch = 0
-        pat1 = pat2 = pat3 = pat4 = 0
         lst = prj.pat_list.splitlines()
         for pat_name in lst:
             if pat_name in self.pat_dict2:
                 pat = self.pat_dict2[pat_name]
                 check_str = '知识产权类型错误时默认字符串'
                 match pat.p_class:
-                    case '软件著作权':
+                    case '软件著作权' | '集成电路布图设计专有权':
                         check_str = pat.p_name + '，登记号：' + pat.p_no
-                        pat1 = pat1 + 1
-                    case '实用新型':
+                    case '实用新型专利' | '外观设计专利':
                         check_str = pat.p_name + '，授权号：' + pat.p_no
-                        pat2 = pat2 + 1
-                    case '发明专利' | '发明公布':
+                    case '发明专利（非国防专利）' | '发明专利（国防专利）':
                         check_str = pat.p_name + '，授权号：' + pat.p_no
-                        pat3 = pat3 + 1
-                    case '集成电路布图':
-                        check_str = pat.p_name + '，授权号：' + pat.p_no
-                        pat4 = pat4 + 1
                     case _:
                         self.textEdit.append('知识产权类型错误：' + pat.p_name + '：' + pat.p_class)
                 found = False
@@ -351,11 +352,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 checkr = CheckR()  # 已匹配条目数
                 doc_name = ''
                 try:
-                    doc_name = self.workdir + '/RD' + project.p_order + project.p_name + '.docx'
+                    doc_name = self.workdir + '/RD' + project.p_order + '_' + project.p_name + '.docx'
                     document = Document(doc_name)
                     checkr = checkr + self.findindoc(document, text)
-                    # if modify:
-                    #     document.save(doc_name)
                 except PackageNotFoundError:
                     self.textEdit.append('Error打开文件错误：' + doc_name)
                 except PermissionError:
@@ -465,7 +464,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         return checkr
 
     def start_time(self, doc, prj):
-        return self.check_replace(doc.paragraphs, '申请立项时间：\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
+        return self.check_replace(doc.paragraphs, r'申请立项时间：\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                   '申请立项时间：' + prj.p_start)
 
     def second_table(self, doc, prj):
@@ -475,7 +474,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                                                              '项目团队由(.*)人组成，项目实施周期为(.*)个月。',
                                                              '项目团队由' + prj.p_people + '人组成，项目实施周期为' + prj.p_cost + '个月。')
         checkr = checkr + self.check_replace(doc.tables[1].rows[6].cells[1].paragraphs,
-                                             '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
+                                             r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                              prj.p_start + '至' + prj.p_end)
         checkr = checkr + self.check_replace(doc.tables[1].rows[7].cells[1].paragraphs,
                                              '项目总资金预算.*万元', '项目总资金预算' + prj.p_money + '万元')
@@ -488,7 +487,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if prj.p_rnd != 'None':
             checkr = checkr + self.check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '研发成员：.*',
                                                  '研发成员：' + prj.p_rnd)
-        checkr = checkr + self.check_replace(doc.tables[1].rows[9].cells[1].paragraphs, '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
+        checkr = checkr + self.check_replace(doc.tables[1].rows[9].cells[1].paragraphs, r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                              prj.p_start)
         return checkr
 
@@ -523,9 +522,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def third_table(self, doc, prj):
         checkr = self.check_replace_all(doc.tables[2].rows[0].cells[1].paragraphs[0], prj.p_name)
         checkr = checkr + self.check_replace(doc.tables[2].rows[1].cells[1].paragraphs,
-                                                             '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
+                                                             r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
         checkr = checkr + self.check_replace(doc.tables[2].rows[2].cells[1].paragraphs,
-                                             '\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
+                                             r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                              prj.p_start + '至' + prj.p_end)
         checkr = checkr + self.check_replace_all(doc.tables[2].rows[3].cells[1].paragraphs[0], prj.p_owner)
         return checkr
