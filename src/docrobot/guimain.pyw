@@ -513,6 +513,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if para.text != dst:
             unmatch = unmatch + 1
             self.textEdit.append(para.text + ' ===> ' + dst)
+            if len(para.runs) == 0:
+                para.add_run('')
             para.runs[0].text = dst
             self.clear_runs(para.runs)
         else:
