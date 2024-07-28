@@ -10,6 +10,7 @@ from PySide6 import QtCore
 from PySide6.QtCore import QEventLoop, QTimer
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QInputDialog
 from docx import Document
+from docx.enum.text import WD_COLOR_INDEX
 from docx.opc.exceptions import PackageNotFoundError
 from openpyxl.reader.excel import load_workbook
 from win32com.client import DispatchEx
@@ -99,6 +100,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.actioncheckall.triggered.connect(self.checkall)
         self.actionsearchall.triggered.connect(self.searchall)
         self.actionpat_table.triggered.connect(self.prepare_pat_table)
+        self.actionremove_yellow.triggered.connect(self.remove_highlight)
 
         self.config = ConfigParser()
         try:
@@ -394,6 +396,30 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                     prompt = prompt + ' <font color="red"><b>' + str(checkr.unmatch) + ' </b></font> 项不匹配。'
                 self.textEdit.append(prompt)
 
+    def remove_highlight(self):
+        self.textEdit.setText('')
+        self.update_data()
+        for project in self.arr_prj:
+            # self.textEdit.append(project.p_order + ' 项目开始处理...')
+            checkr = CheckR()  # 已匹配条目数
+            doc_name = ''
+            try:
+                doc_name = self.workdir + '/RD' + project.p_order + '_' + project.p_name + '.docx'
+                document = Document(doc_name)
+                checkr = checkr + self.remove_hl_indoc(document)
+                if checkr.match > 0:
+                    prompt = project.p_order + ' 项目检查完成。 <font color="green"><b>' + str(
+                        checkr.match) + ' </b></font> 项黄底字体已替换。'
+                    document.save(doc_name)
+                else:
+                    prompt = project.p_order + ' 项目检查完成。 没有黄底字体。'
+                self.textEdit.append(prompt)
+            except PackageNotFoundError:
+                self.textEdit.append('Error打开文件错误：' + doc_name)
+            except PermissionError:
+                self.textEdit.append('Error保存文件错误，可能是文件已被打开：' + doc_name)
+
+
     @staticmethod
     def clear_runs(runs):
         for i, run in enumerate(runs):
@@ -444,6 +470,38 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                             match = match + 1
                             newstr = para.text.replace(keyword, f'<font color="red"><b>{keyword}</b></font>')
                             self.textEdit.append(f'表.{i} 行.{j} 列{k} 段.{l} : {newstr}')
+        return CheckR(match, 0)
+
+    def remove_hl_indoc(self, doc):
+        match = 0
+        for i, sect in enumerate(doc.sections):
+            for j, para in enumerate(sect.header.paragraphs):
+                for k, run in enumerate(para.runs):
+                    if run.font.highlight_color == WD_COLOR_INDEX.YELLOW:
+                        self.textEdit.append(f'Highlight已去除:  {run.text}')
+                        run.font.highlight_color = None
+                        match = match + 1
+                    elif run.font.highlight_color is not None:
+                        self.textEdit.append(f'其它Highlight颜色，未处理:  {run.text}')
+        for i, para in enumerate(doc.paragraphs):
+            for k, run in enumerate(para.runs):
+                if run.font.highlight_color == WD_COLOR_INDEX.YELLOW:
+                    self.textEdit.append(f'Highlight已去除:  {run.text}')
+                    run.font.highlight_color = None
+                    match = match + 1
+                elif run.font.highlight_color is not None:
+                    self.textEdit.append(f'其它Highlight颜色，未处理:  {run.text}')
+        for i, table in enumerate(doc.tables):
+            for j, row in enumerate(table.rows):
+                for k, cell in enumerate(row.cells):
+                    for l, para in enumerate(cell.paragraphs):
+                        for k, run in enumerate(para.runs):
+                            if run.font.highlight_color == WD_COLOR_INDEX.YELLOW:
+                                self.textEdit.append(f'Highlight已去除:  {run.text}')
+                                run.font.highlight_color = None
+                                match = match + 1
+                            elif run.font.highlight_color is not None:
+                                self.textEdit.append(f'其它Highlight颜色，未处理:  {run.text}')
         return CheckR(match, 0)
 
     def replace_comname(self, doc, prj):
