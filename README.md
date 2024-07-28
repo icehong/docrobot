@@ -7,7 +7,12 @@
 
 然后找到
 
+开发环境准备：
 构建环境准备:
 python -m pip install -U pip setuptools
 pip install pywin32 python-docx openpyxl pyside6 -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
+
+
+重新生成UI界面 
+pyside6-uic form.ui -o form.py 
 

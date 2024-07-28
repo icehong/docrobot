@@ -4,10 +4,11 @@ import re
 import shutil
 import sys
 from configparser import ConfigParser
+from datetime import datetime
 
 from PySide6 import QtCore
 from PySide6.QtCore import QEventLoop, QTimer
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QInputDialog, QLineEdit
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QInputDialog
 from docx import Document
 from docx.opc.exceptions import PackageNotFoundError
 from openpyxl.reader.excel import load_workbook
@@ -34,6 +35,8 @@ class Patent(object):
     p_order = ''  # 序号
     p_class = ''  # 类别
     p_no = ''  # 专利/登记号
+    p_got = ''  # 获得方式
+    p_date = ''  # 授权日期
 
 
 class CheckR(object):
@@ -60,27 +63,42 @@ class EmittingStr(QtCore.QObject):
         QApplication.processEvents()
 
 
+def format_date(date_str):
+    if isinstance(date_str, datetime):
+        return date_str.strftime('%Y-%m-%d')
+    else:
+        try:
+            tmpdate = datetime.strptime(date_str, '%Y-%m-%d')
+            return tmpdate.strftime('%Y-%m-%d')
+        except ValueError:
+            print(f"日期格式错误:{date_str}")
+            return date_str
+
+
 class MainWindow(Ui_MainWindow, QMainWindow):
     workdir = ''
-    file_prj = ''
-    file_pat = ''
-    pat_dict = {}  # 专利->序号字典   TODO 合并到dict2里面去
-    pat_dict2 = {}  # 专利->专利对象字典
+    file_prj = ''  # 立项报告汇总表
+    file_pat = ''  # 知识产权汇总表
+    file_pat_upload = ''  # 知识产权表_上传
+    pat_list = []  # 专利对象列表
+    pat_dict = {}  # 专利名字->序号字典   TODO 合并到dict2里面去
+    pat_dict2 = {}  # 专利名字->专利对象字典
     arr_prj = []  # 项目数组
 
     def __init__(self):
         super(MainWindow, self).__init__()
         self.setupUi(self)
         sys.stdout = EmittingStr()
-        sys.stdout.textWritten.connect(self.outputWritten)
+        sys.stdout.textWritten.connect(self.outputwritten)
         sys.stderr = EmittingStr()
-        sys.stderr.textWritten.connect(self.outputWritten)
+        sys.stderr.textWritten.connect(self.outputwritten)
 
-        self.actionSelect_Dir.triggered.connect(self.setDocUrl)
+        self.actionSelect_Dir.triggered.connect(self.set_docurl)
         self.actioncheck.triggered.connect(lambda: self.checkpatent(True))
         self.actionreplace.triggered.connect(lambda: self.replaceprj(True))
         self.actioncheckall.triggered.connect(self.checkall)
         self.actionsearchall.triggered.connect(self.searchall)
+        self.actionpat_table.triggered.connect(self.prepare_pat_table)
 
         self.config = ConfigParser()
         try:
@@ -96,10 +114,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.workdir = ''
         self.lineEdit.setText(self.workdir)
 
-    def outputWritten(self, text):
+    def outputwritten(self, text):
         self.textEdit.append(text.strip())
 
-    def setDocUrl(self):
+    def set_docurl(self):
         # 重新选择输入和输出目录时，进度条设置为0，文本框的内容置空
         tempdir = QFileDialog.getExistingDirectory(self, "选中项目所在目录", r"")
         if tempdir != '':
@@ -116,10 +134,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 self.file_prj = self.workdir + '/' + file_sum
             if file_sum.endswith('知识产权汇总表.xlsx') and not file_sum.startswith('~$'):
                 self.file_pat = self.workdir + '/' + file_sum
+            if file_sum.endswith('知识产权表_上传.xlsx') and not file_sum.startswith('~$'):
+                self.file_pat_upload = self.workdir + '/' + file_sum
         if self.file_prj == '':
             self.textEdit.append('没找到：' + '立项报告汇总表.xlsx')
+            return
         if self.file_pat == '':
             self.textEdit.append('没找到：' + '知识产权汇总表.xlsx')
+            return
+        if self.file_pat_upload == '':
+            self.textEdit.append('没找到：' + '知识产权表_上传.xlsx')
+            return
+        # self.update_data()
 
     def replaceprj(self, modify=False):
         if modify:
@@ -228,9 +254,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 xl_book = xl_app.Workbooks.Open(self.file_prj)
                 xl_book.Saved = False
                 xl_book.Close(True)
-                xl_book = None
                 xl_app.Quit()
-                xl_app = None
         except PermissionError:
             self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_prj)
         wb.close()
@@ -275,6 +299,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         return CheckR(match, unmatch)
 
     def update_data(self):
+        self.pat_list.clear()
         self.pat_dict.clear()
         self.pat_dict2.clear()
         with open(self.file_pat, "rb") as f:
@@ -283,7 +308,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         ws = wb.active
         if ws is not None:
             max_row_num = ws.max_row
-            range_cell = ws[f'A3:D{max_row_num}']
+            range_cell = ws[f'A3:F{max_row_num}']
             for r in range_cell:
                 if r[0].value is None:
                     break
@@ -292,6 +317,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 pat.p_name = str(r[1].value).strip()
                 pat.p_class = str(r[2].value).strip()
                 pat.p_no = str(r[3].value).strip()
+                pat.p_date = format_date(r[4].value)
+                pat.p_got = str(r[5].value).strip()
+                self.pat_list.append(pat)
                 self.pat_dict[pat.p_name] = pat.p_order
                 self.pat_dict2[pat.p_name] = pat
         else:
@@ -318,8 +346,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 project.p_comname = com_name
                 project.p_order = str(r[0].value).strip().zfill(2)
                 project.p_name = str(r[1].value).strip()  # 项目名称
-                project.p_start = r[2].value.strftime('%Y-%m-%d')
-                project.p_end = r[3].value.strftime('%Y-%m-%d')
+                project.p_start = format_date(r[2].value)
+                project.p_end = format_date(r[3].value)
                 project.p_cost = str(r[5].value).strip()
                 project.p_people = str(r[6].value).strip()  # 人数
                 project.p_owner = str(r[7].value).strip()  # 项目负责人
@@ -345,7 +373,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.textEdit.setText('')
         self.update_data()
         text, ok = QInputDialog.getText(self, "全项目查找",
-                                        "查找内容:", QLineEdit.Normal)
+                                        "查找内容:")
         if ok and text:
             for project in self.arr_prj:
                 # self.textEdit.append(project.p_order + ' 项目开始处理...')
@@ -458,9 +486,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def first_table(self, doc, prj):
         checkr = self.check_replace_all(doc.tables[0].rows[0].cells[1].paragraphs[0], prj.p_name)
-        checkr = checkr + self.check_replace_all(doc.tables[0].rows[1].cells[1].paragraphs[0], prj.p_start[0:4] + 'RD' + prj.p_order)
+        checkr = checkr + self.check_replace_all(doc.tables[0].rows[1].cells[1].paragraphs[0],
+                                                 prj.p_start[0:4] + 'RD' + prj.p_order)
         checkr = checkr + self.check_replace_all(doc.tables[0].rows[2].cells[1].paragraphs[0], prj.p_owner)
-        checkr = checkr + self.check_replace_all(doc.tables[0].rows[3].cells[1].paragraphs[0], prj.p_start + '至' + prj.p_end)
+        checkr = checkr + self.check_replace_all(doc.tables[0].rows[3].cells[1].paragraphs[0],
+                                                 prj.p_start + '至' + prj.p_end)
         return checkr
 
     def start_time(self, doc, prj):
@@ -471,8 +501,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         checkr = self.check_replace_all(doc.tables[1].rows[0].cells[1].paragraphs[0], prj.p_name)
 
         checkr = checkr + self.check_replace(doc.tables[1].rows[1].cells[1].paragraphs,
-                                                             '项目团队由(.*)人组成，项目实施周期为(.*)个月。',
-                                                             '项目团队由' + prj.p_people + '人组成，项目实施周期为' + prj.p_cost + '个月。')
+                                             '项目团队由(.*)人组成，项目实施周期为(.*)个月。',
+                                             '项目团队由' + prj.p_people + '人组成，项目实施周期为' + prj.p_cost + '个月。')
         checkr = checkr + self.check_replace(doc.tables[1].rows[6].cells[1].paragraphs,
                                              r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                              prj.p_start + '至' + prj.p_end)
@@ -487,7 +517,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         if prj.p_rnd != 'None':
             checkr = checkr + self.check_replace(doc.tables[1].rows[8].cells[1].paragraphs, '研发成员：.*',
                                                  '研发成员：' + prj.p_rnd)
-        checkr = checkr + self.check_replace(doc.tables[1].rows[9].cells[1].paragraphs, r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
+        checkr = checkr + self.check_replace(doc.tables[1].rows[9].cells[1].paragraphs,
+                                             r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                              prj.p_start)
         return checkr
 
@@ -524,12 +555,37 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     def third_table(self, doc, prj):
         checkr = self.check_replace_all(doc.tables[2].rows[0].cells[1].paragraphs[0], prj.p_name)
         checkr = checkr + self.check_replace(doc.tables[2].rows[1].cells[1].paragraphs,
-                                                             r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
+                                             r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
         checkr = checkr + self.check_replace(doc.tables[2].rows[2].cells[1].paragraphs,
                                              r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
                                              prj.p_start + '至' + prj.p_end)
         checkr = checkr + self.check_replace_all(doc.tables[2].rows[3].cells[1].paragraphs[0], prj.p_owner)
         return checkr
+
+    def prepare_pat_table(self):
+        """
+        根据专利汇总表准备上传的表格
+        """
+        wb = load_workbook(self.file_pat_upload)
+        ws = wb.active
+
+        row = 2
+        for pat in self.pat_list:
+            ws.cell(row, column=1, value="IP" + pat.p_order)
+            ws.cell(row, column=2, value=pat.p_name)
+            ws.cell(row, column=3, value=pat.p_class)
+            ws.cell(row, column=4, value=pat.p_got)
+            ws.cell(row, column=5, value=pat.p_no)
+            ws.cell(row, column=6, value=pat.p_date)
+            ws.cell(row, column=7, value="单位")
+            row = row + 1
+
+        try:
+            wb.save(self.file_pat_upload)
+        except PermissionError:
+            self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_pat_upload)
+        wb.close()
+        self.textEdit.append(f'{self.file_pat_upload} 更新完成')
 
 
 if __name__ == "__main__":

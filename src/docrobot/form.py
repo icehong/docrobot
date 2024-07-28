@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'form.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.5.1
+## Created by: Qt User Interface Compiler version 6.7.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -35,6 +35,10 @@ class Ui_MainWindow(object):
         self.actioncheckall.setObjectName(u"actioncheckall")
         self.actionsearchall = QAction(MainWindow)
         self.actionsearchall.setObjectName(u"actionsearchall")
+        self.actionremove_yellow = QAction(MainWindow)
+        self.actionremove_yellow.setObjectName(u"actionremove_yellow")
+        self.actionpat_table = QAction(MainWindow)
+        self.actionpat_table.setObjectName(u"actionpat_table")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.textEdit = QTextEdit(self.centralwidget)
@@ -68,6 +72,8 @@ class Ui_MainWindow(object):
         self.menu_3.setObjectName(u"menu_3")
         self.menu_4 = QMenu(self.menubar)
         self.menu_4.setObjectName(u"menu_4")
+        self.menu_5 = QMenu(self.menubar)
+        self.menu_5.setObjectName(u"menu_5")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -77,12 +83,15 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu_4.menuAction())
         self.menubar.addAction(self.menu_2.menuAction())
         self.menubar.addAction(self.menu_3.menuAction())
+        self.menubar.addAction(self.menu_5.menuAction())
         self.menu.addAction(self.actionSelect_Dir)
         self.menu_2.addAction(self.actionreplace)
+        self.menu_2.addAction(self.actionremove_yellow)
         self.menu_3.addAction(self.actioncheck)
         self.menu_4.addSeparator()
         self.menu_4.addAction(self.actioncheckall)
         self.menu_4.addAction(self.actionsearchall)
+        self.menu_5.addAction(self.actionpat_table)
 
         self.retranslateUi(MainWindow)
 
@@ -96,10 +105,13 @@ class Ui_MainWindow(object):
         self.actionreplace.setText(QCoreApplication.translate("MainWindow", u"\u6279\u91cf\u66ff\u6362", None))
         self.actioncheckall.setText(QCoreApplication.translate("MainWindow", u"\u68c0\u67e5\u6240\u6709\u9879", None))
         self.actionsearchall.setText(QCoreApplication.translate("MainWindow", u"\u5168\u6587\u641c\u7d22", None))
+        self.actionremove_yellow.setText(QCoreApplication.translate("MainWindow", u"\u53bb\u9664\u9ec4\u5e95", None))
+        self.actionpat_table.setText(QCoreApplication.translate("MainWindow", u"\u66f4\u65b0\u77e5\u8bc6\u4ea7\u6743\u8868", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u5904\u7406\u76ee\u5f55\uff1a", None))
         self.menu.setTitle(QCoreApplication.translate("MainWindow", u"\u8bbe\u7f6e", None))
         self.menu_2.setTitle(QCoreApplication.translate("MainWindow", u"\u9879\u76ee\u6587\u6863", None))
         self.menu_3.setTitle(QCoreApplication.translate("MainWindow", u"\u7acb\u9879\u603b\u8868", None))
         self.menu_4.setTitle(QCoreApplication.translate("MainWindow", u"\u68c0\u67e5", None))
+        self.menu_5.setTitle(QCoreApplication.translate("MainWindow", u"\u5b98\u65b9\u6587\u4ef6", None))
     # retranslateUi
 

@@ -67,6 +67,7 @@
      <string>项目文档</string>
     </property>
     <addaction name="actionreplace"/>
+    <addaction name="actionremove_yellow"/>
    </widget>
    <widget class="QMenu" name="menu_3">
     <property name="title">
@@ -82,10 +83,17 @@
     <addaction name="actioncheckall"/>
     <addaction name="actionsearchall"/>
    </widget>
+   <widget class="QMenu" name="menu_5">
+    <property name="title">
+     <string>官方文件</string>
+    </property>
+    <addaction name="actionpat_table"/>
+   </widget>
    <addaction name="menu"/>
    <addaction name="menu_4"/>
    <addaction name="menu_2"/>
    <addaction name="menu_3"/>
+   <addaction name="menu_5"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionSelect_Dir">
@@ -111,6 +119,16 @@
   <action name="actionsearchall">
    <property name="text">
     <string>全文搜索</string>
+   </property>
+  </action>
+  <action name="actionremove_yellow">
+   <property name="text">
+    <string>去除黄底</string>
+   </property>
+  </action>
+  <action name="actionpat_table">
+   <property name="text">
+    <string>更新知识产权表</string>
    </property>
   </action>
  </widget>
