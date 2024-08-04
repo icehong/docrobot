@@ -29,6 +29,8 @@ class Project(object):
     p_owner = ''  # 项目负责人
     p_rnd = ''  # 研发人员
     p_money = ''  # 总预算
+    pat_list = ''  # 知识产权名称
+    ip_list = ''  # IP
 
 
 class Patent(object):
@@ -131,6 +133,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
     def onchangeworkdir(self):
         self.lineEdit.setText(self.workdir)
+        self.textEdit.clear()
         for file_sum in os.listdir(self.workdir):
             if file_sum.endswith('立项报告汇总表.xlsx') and not file_sum.startswith('~$'):
                 self.file_prj = self.workdir + '/' + file_sum
@@ -140,13 +143,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 self.file_pat_upload = self.workdir + '/' + file_sum
         if self.file_prj == '':
             self.textEdit.append('没找到：' + '立项报告汇总表.xlsx')
-            return
         if self.file_pat == '':
             self.textEdit.append('没找到：' + '知识产权汇总表.xlsx')
-            return
         if self.file_pat_upload == '':
             self.textEdit.append('没找到：' + '知识产权表_上传.xlsx')
-            return
         # self.update_data()
 
     def replaceprj(self, modify=False):
@@ -219,7 +219,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                     match = match + 1
             else:
                 lst = pat_name.splitlines()
-                rep = [self.pat_dict[x] if x in self.pat_dict else x for x in lst]
+                rep = [self.pat_dict[x] if x in self.pat_dict else x for x in lst]  # 神啊，不懂了
                 for element in rep:
                     if re.search(r'^\d\d$', element) is None:
                         self.textEdit.append('专利IP错误：' + element)
@@ -419,7 +419,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             except PermissionError:
                 self.textEdit.append('Error保存文件错误，可能是文件已被打开：' + doc_name)
 
-
     @staticmethod
     def clear_runs(runs):
         for i, run in enumerate(runs):
@@ -495,7 +494,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             for j, row in enumerate(table.rows):
                 for k, cell in enumerate(row.cells):
                     for l, para in enumerate(cell.paragraphs):
-                        for k, run in enumerate(para.runs):
+                        for m, run in enumerate(para.runs):
                             if run.font.highlight_color == WD_COLOR_INDEX.YELLOW:
                                 self.textEdit.append(f'Highlight已去除:  {run.text}')
                                 run.font.highlight_color = None
@@ -611,6 +610,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         return CheckR(match, unmatch)
 
     def third_table(self, doc, prj):
+        """
+        项目验收报告
+        """
         checkr = self.check_replace_all(doc.tables[2].rows[0].cells[1].paragraphs[0], prj.p_name)
         checkr = checkr + self.check_replace(doc.tables[2].rows[1].cells[1].paragraphs,
                                              r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
@@ -619,6 +621,28 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                                              prj.p_start + '至' + prj.p_end)
         checkr = checkr + self.check_replace_all(doc.tables[2].rows[3].cells[1].paragraphs[0], prj.p_owner)
         return checkr
+
+    def get_prj_core(self, project):
+        """
+        获取项目核心技术和创新点
+        """
+        tmp = doc_name = ''
+        try:
+            doc_name = self.workdir + '/RD' + project.p_order + '_' + project.p_name + '.docx'
+            doc = Document(doc_name)
+            paras = doc.tables[1].rows[2].cells[1].paragraphs
+            for i, para in enumerate(paras):
+                tmp = tmp + para.text
+            rst = re.search(r"1、核心技术(.*)2、创新点(.*)", tmp, re.S)
+            if rst is not None:
+                return rst.group(1), rst.group(2)
+            else:
+                self.textEdit.append(doc_name + ': 没有找到 核心技术 or 创新点')
+                return '', ''
+        except PackageNotFoundError:
+            self.textEdit.append('Error打开文件错误：' + doc_name)
+        except PermissionError:
+            self.textEdit.append('Error 保存文件错误，可能是文件已被打开：' + doc_name)
 
     def prepare_pat_table(self):
         """
@@ -636,8 +660,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             ws.cell(row, column=5, value=pat.p_no)
             ws.cell(row, column=6, value=pat.p_date)
             ws.cell(row, column=7, value="单位")
+            tmp1 = tmp2 = ''
+            for prj in self.arr_prj:
+                if ("IP" + pat.p_order) in prj.ip_list:
+                    tmp1, tmp2 = self.get_prj_core(prj)
+            ws.cell(row, column=9, value=tmp1)
+            ws.cell(row, column=10, value=tmp2)
             row = row + 1
-
         try:
             wb.save(self.file_pat_upload)
         except PermissionError:
