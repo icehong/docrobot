@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 [project]
 name = "docrobot"
-version = "1.1.7"
+version = "1.1.8"
 authors = [
   { name="Xu Hong", email="icehong@gmail.com" },
 ]
@@ -19,7 +19,7 @@ dependencies = [
     "pywin32",
     "python-docx",
     "openpyxl",
-    "pyside6"
+    "PySide6"
 ]
 [project.urls]
 "Homepage" = "https://github.com/icehong/docrobot"

@@ -39,6 +39,8 @@ class Ui_MainWindow(object):
         self.actionremove_yellow.setObjectName(u"actionremove_yellow")
         self.actionpat_table = QAction(MainWindow)
         self.actionpat_table.setObjectName(u"actionpat_table")
+        self.actionrd_summary = QAction(MainWindow)
+        self.actionrd_summary.setObjectName(u"actionrd_summary")
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.textEdit = QTextEdit(self.centralwidget)
@@ -92,6 +94,7 @@ class Ui_MainWindow(object):
         self.menu_4.addAction(self.actioncheckall)
         self.menu_4.addAction(self.actionsearchall)
         self.menu_5.addAction(self.actionpat_table)
+        self.menu_5.addAction(self.actionrd_summary)
 
         self.retranslateUi(MainWindow)
 
@@ -107,6 +110,7 @@ class Ui_MainWindow(object):
         self.actionsearchall.setText(QCoreApplication.translate("MainWindow", u"\u5168\u6587\u641c\u7d22", None))
         self.actionremove_yellow.setText(QCoreApplication.translate("MainWindow", u"\u53bb\u9664\u9ec4\u5e95", None))
         self.actionpat_table.setText(QCoreApplication.translate("MainWindow", u"\u66f4\u65b0\u77e5\u8bc6\u4ea7\u6743\u8868", None))
+        self.actionrd_summary.setText(QCoreApplication.translate("MainWindow", u"\u66f4\u65b0\u7814\u7a76\u5f00\u53d1\u6c47\u603b\u8868", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u5904\u7406\u76ee\u5f55\uff1a", None))
         self.menu.setTitle(QCoreApplication.translate("MainWindow", u"\u8bbe\u7f6e", None))
         self.menu_2.setTitle(QCoreApplication.translate("MainWindow", u"\u9879\u76ee\u6587\u6863", None))

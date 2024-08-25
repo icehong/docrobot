@@ -103,6 +103,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         self.actionsearchall.triggered.connect(self.searchall)
         self.actionpat_table.triggered.connect(self.prepare_pat_table)
         self.actionremove_yellow.triggered.connect(self.remove_highlight)
+        self.actionrd_summary.triggered.connect(self.prepare_rdsummary_table)
 
         self.config = ConfigParser()
         try:
@@ -622,6 +623,33 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         checkr = checkr + self.check_replace_all(doc.tables[2].rows[3].cells[1].paragraphs[0], prj.p_owner)
         return checkr
 
+    def get_prj_init(self, project):
+        """
+        获取项目 立项目的、意义及组织实施方式//核心技术及创新点//取得的阶段性成果
+        """
+        tmp1 = tmp2 = tmp3 = doc_name = ''
+        try:
+            doc_name = self.workdir + '/RD' + project.p_order + '_' + project.p_name + '.docx'
+            doc = Document(doc_name)
+            paras = doc.tables[1].rows[1].cells[1].paragraphs
+            for i, para in enumerate(paras):
+                tmp1 = tmp1 + para.text
+            tmp1 = tmp1.replace("1、立项目的及意义", "")
+            tmp1 = tmp1.replace("2、组织实施方式", "")
+            tmp1 = tmp1.split("主要任务分配：", 1)[0]
+
+            paras = doc.tables[2].rows[4].cells[0].paragraphs
+            for i, para in enumerate(paras):
+                tmp2 = tmp2 + para.text
+            tmp2 = tmp2.split("1、取得的阶段性成果", 1)[1]
+            tmp2 = tmp2.split("2、成效", 1)[0]
+
+            return tmp1, tmp2
+        except PackageNotFoundError:
+            self.textEdit.append('Error打开文件错误：' + doc_name)
+        except PermissionError:
+            self.textEdit.append('Error 保存文件错误，可能是文件已被打开：' + doc_name)
+
     def get_prj_core(self, project):
         """
         获取项目核心技术和创新点
@@ -669,10 +697,51 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             row = row + 1
         try:
             wb.save(self.file_pat_upload)
+            self.textEdit.append(f'{self.file_pat_upload} 更新完成')
         except PermissionError:
             self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_pat_upload)
-        wb.close()
-        self.textEdit.append(f'{self.file_pat_upload} 更新完成')
+        finally:
+            wb.close()
+
+    def prepare_rdsummary_table(self):
+        """
+        企业研究开发活动汇总表
+        """
+        filename = '企业研究开发活动汇总表（近三年执行的活动）.xlsx'
+        file_rd_summary = self.workdir + '/' + filename
+        if not os.path.exists(file_rd_summary):
+            self.textEdit.append('文件不存在.' + filename)
+            return
+
+        wb = load_workbook(file_rd_summary)
+        ws = wb.active
+        row = 2
+        for prj in self.arr_prj:
+            ws.cell(row, column=1, value="RD" + prj.p_order)
+            ws.cell(row, column=2, value=prj.p_name)
+            # TODO   五、高技术服务/（四）高技术专业化服务
+            # ws.cell(row, column=3, value=prj.p_class)
+            # ws.cell(row, column=4, value=prj.p_got)
+            # ws.cell(row, column=5, value=prj.p_no)
+            ws.cell(row, column=6, value=prj.p_start)
+            ws.cell(row, column=7, value=prj.p_end)
+            ws.cell(row, column=8, value='企业自有技术')
+            ws.cell(row, column=9, value=prj.ip_list)
+            ws.cell(row, column=10, value=prj.p_money)
+            ws.cell(row, column=15, value=prj.p_people)
+            tmp1, tmp2 = self.get_prj_init(prj)
+            ws.cell(row, column=16, value=tmp1)
+            ws.cell(row, column=18, value=tmp2)
+            tmp1, tmp2 = self.get_prj_core(prj)
+            ws.cell(row, column=17, value=tmp1 + tmp2)
+            row = row + 1
+        try:
+            wb.save(file_rd_summary)
+            self.textEdit.append(f'{filename} 更新完成')
+        except PermissionError:
+            self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + filename)
+        finally:
+            wb.close()
 
 
 if __name__ == "__main__":

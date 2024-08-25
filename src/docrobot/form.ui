@@ -88,6 +88,7 @@
      <string>官方文件</string>
     </property>
     <addaction name="actionpat_table"/>
+    <addaction name="actionrd_summary"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_4"/>
@@ -129,6 +130,11 @@
   <action name="actionpat_table">
    <property name="text">
     <string>更新知识产权表</string>
+   </property>
+  </action>
+  <action name="actionrd_summary">
+   <property name="text">
+    <string>更新研究开发汇总表</string>
    </property>
   </action>
  </widget>
