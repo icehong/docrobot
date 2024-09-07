@@ -66,15 +66,15 @@ class EmittingStr(QtCore.QObject):
         QApplication.processEvents()
 
 
-def format_date(date_str):
+def format_date(date_str, index):
     if isinstance(date_str, datetime):
         return date_str.strftime('%Y-%m-%d')
     else:
         try:
             tmpdate = datetime.strptime(date_str, '%Y-%m-%d')
             return tmpdate.strftime('%Y-%m-%d')
-        except ValueError:
-            print(f"日期格式错误:{date_str}")
+        except (ValueError, TypeError) as error:
+            print(f"序号{index} 日期格式错误:{date_str}")
             return date_str
 
 
@@ -262,7 +262,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             self.textEdit.append('写文件失败，关闭其他占用该文件的程序.' + self.file_prj)
         wb.close()
 
-        prompt = '项目立项表IP更新完成。 <font color="green"><b>' + str(match) + ' </b></font> 项条目匹配。'
+        prompt = '立项表IP更新完成。 <font color="green"><b>' + str(match) + ' </b></font> 项条目匹配。'
         if unmatch != 0:
             prompt = prompt + ' <font color="red"><b>' + str(unmatch) + ' </b></font> 项条目不匹配。'
         self.textEdit.append(prompt)
@@ -320,7 +320,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 pat.p_name = str(r[1].value).strip()
                 pat.p_class = str(r[2].value).strip()
                 pat.p_no = str(r[3].value).strip()
-                pat.p_date = format_date(r[4].value)
+                pat.p_date = format_date(r[4].value, pat.p_order)
                 pat.p_got = str(r[5].value).strip()
                 self.pat_list.append(pat)
                 self.pat_dict[pat.p_name] = pat.p_order
@@ -349,8 +349,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 project.p_comname = com_name
                 project.p_order = str(r[0].value).strip().zfill(2)
                 project.p_name = str(r[1].value).strip()  # 项目名称
-                project.p_start = format_date(r[2].value)
-                project.p_end = format_date(r[3].value)
+                project.p_start = format_date(r[2].value, project.p_order)
+                project.p_end = format_date(r[3].value, project.p_order)
                 project.p_cost = str(r[5].value).strip()
                 project.p_people = str(r[6].value).strip()  # 人数
                 project.p_owner = str(r[7].value).strip()  # 项目负责人
@@ -627,7 +627,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         """
         获取项目 立项目的、意义及组织实施方式//核心技术及创新点//取得的阶段性成果
         """
-        tmp1 = tmp2 = tmp3 = doc_name = ''
+        rst = False
+        tmp1 = tmp2 = doc_name = ''
         try:
             doc_name = self.workdir + '/RD' + project.p_order + '_' + project.p_name + '.docx'
             doc = Document(doc_name)
@@ -643,12 +644,12 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 tmp2 = tmp2 + para.text
             tmp2 = tmp2.split("1、取得的阶段性成果", 1)[1]
             tmp2 = tmp2.split("2、成效", 1)[0]
-
-            return tmp1, tmp2
+            rst = True
         except PackageNotFoundError:
             self.textEdit.append('Error打开文件错误：' + doc_name)
         except PermissionError:
             self.textEdit.append('Error 保存文件错误，可能是文件已被打开：' + doc_name)
+        return rst, tmp1, tmp2
 
     def get_prj_core(self, project):
         """
@@ -663,19 +664,22 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 tmp = tmp + para.text
             rst = re.search(r"1、核心技术(.*)2、创新点(.*)", tmp, re.S)
             if rst is not None:
-                return rst.group(1), rst.group(2)
+                return True, rst.group(1), rst.group(2)
             else:
                 self.textEdit.append(doc_name + ': 没有找到 核心技术 or 创新点')
-                return '', ''
+                return False, '', ''
         except PackageNotFoundError:
             self.textEdit.append('Error打开文件错误：' + doc_name)
         except PermissionError:
             self.textEdit.append('Error 保存文件错误，可能是文件已被打开：' + doc_name)
+        return False, '', ''
 
     def prepare_pat_table(self):
         """
         根据专利汇总表准备上传的表格
         """
+        self.textEdit.setText('')
+        self.update_data()
         wb = load_workbook(self.file_pat_upload)
         ws = wb.active
 
@@ -689,11 +693,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             ws.cell(row, column=6, value=pat.p_date)
             ws.cell(row, column=7, value="单位")
             tmp1 = tmp2 = ''
+            rst = False
             for prj in self.arr_prj:
                 if ("IP" + pat.p_order) in prj.ip_list:
-                    tmp1, tmp2 = self.get_prj_core(prj)
-            ws.cell(row, column=9, value=tmp1)
-            ws.cell(row, column=10, value=tmp2)
+                    rst, tmp1, tmp2 = self.get_prj_core(prj)
+                    if rst:
+                        ws.cell(row, column=9, value=tmp1)
+                        ws.cell(row, column=10, value=tmp2)
+                        break
             row = row + 1
         try:
             wb.save(self.file_pat_upload)
@@ -707,6 +714,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         """
         企业研究开发活动汇总表
         """
+        self.textEdit.setText('')
+        self.update_data()
         filename = '企业研究开发活动汇总表（近三年执行的活动）.xlsx'
         file_rd_summary = self.workdir + '/' + filename
         if not os.path.exists(file_rd_summary):
@@ -715,6 +724,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
         wb = load_workbook(file_rd_summary)
         ws = wb.active
+        ws.delete_rows(2, 200)
         row = 2
         for prj in self.arr_prj:
             ws.cell(row, column=1, value="RD" + prj.p_order)
@@ -729,11 +739,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             ws.cell(row, column=9, value=prj.ip_list)
             ws.cell(row, column=10, value=prj.p_money)
             ws.cell(row, column=15, value=prj.p_people)
-            tmp1, tmp2 = self.get_prj_init(prj)
-            ws.cell(row, column=16, value=tmp1)
-            ws.cell(row, column=18, value=tmp2)
-            tmp1, tmp2 = self.get_prj_core(prj)
-            ws.cell(row, column=17, value=tmp1 + tmp2)
+            rst, tmp1, tmp2 = self.get_prj_init(prj)
+            if rst:
+                ws.cell(row, column=16, value=tmp1)
+                ws.cell(row, column=18, value=tmp2)
+            rst, tmp1, tmp2 = self.get_prj_core(prj)
+            if rst:
+                ws.cell(row, column=17, value=tmp1 + tmp2)
             row = row + 1
         try:
             wb.save(file_rd_summary)
