@@ -427,6 +427,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 run.clear()
         return runs
 
+    @staticmethod
+    def clear_paras(paras):
+        para = paras[0]
+        paras.clear()
+        paras.append(para)
+        return paras
+
     def debug_doc(self, doc):
         for i, sect in enumerate(doc.sections):
             for j, para in enumerate(sect.header.paragraphs):
@@ -543,12 +550,12 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         return checkr
 
     def first_table(self, doc, prj):
-        checkr = self.check_replace_all(doc.tables[0].rows[0].cells[1].paragraphs[0], prj.p_name)
-        checkr = checkr + self.check_replace_all(doc.tables[0].rows[1].cells[1].paragraphs[0],
+        checkr = self.check_replace_para(doc.tables[0].rows[0].cells[1].paragraphs[0], prj.p_name)
+        checkr = checkr + self.check_replace_para(doc.tables[0].rows[1].cells[1].paragraphs[0],
                                                  prj.p_start[0:4] + 'RD' + prj.p_order)
-        checkr = checkr + self.check_replace_all(doc.tables[0].rows[2].cells[1].paragraphs[0], prj.p_owner)
-        checkr = checkr + self.check_replace_all(doc.tables[0].rows[3].cells[1].paragraphs[0],
-                                                 prj.p_start + '至' + prj.p_end)
+        checkr = checkr + self.check_replace_para(doc.tables[0].rows[2].cells[1].paragraphs[0], prj.p_owner)
+        checkr = checkr + self.check_replace_para(doc.tables[0].rows[3].cells[1].paragraphs[0],
+                                                  prj.p_start + '至' + prj.p_end)
         return checkr
 
     def start_time(self, doc, prj):
@@ -556,14 +563,16 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                                   '申请立项时间：' + prj.p_start)
 
     def second_table(self, doc, prj):
-        checkr = self.check_replace_all(doc.tables[1].rows[0].cells[1].paragraphs[0], prj.p_name)
+        checkr = self.check_replace_para(doc.tables[1].rows[0].cells[1].paragraphs[0], prj.p_name)
 
         checkr = checkr + self.check_replace(doc.tables[1].rows[1].cells[1].paragraphs,
                                              '项目团队由(.*)人组成，项目实施周期为(.*)个月。',
                                              '项目团队由' + prj.p_people + '人组成，项目实施周期为' + prj.p_cost + '个月。')
-        checkr = checkr + self.check_replace(doc.tables[1].rows[6].cells[1].paragraphs,
-                                             r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
-                                             prj.p_start + '至' + prj.p_end)
+        if len(doc.tables[1].rows[6].cells[1].paragraphs) > 1:
+            self.textEdit.append('<font color="red"><b>' + '项目进度安排->工作进度 内容为多段，需要删除多余的段落. ' +
+                                 ' </b></font>' )
+        checkr = checkr + self.check_replace_paras(doc.tables[1].rows[6].cells[1].paragraphs,
+                                             prj.p_start + '\n至\n' + prj.p_end)
         checkr = checkr + self.check_replace(doc.tables[1].rows[7].cells[1].paragraphs,
                                              '项目总资金预算.*万元', '项目总资金预算' + prj.p_money + '万元')
 
@@ -581,6 +590,9 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         return checkr
 
     def check_replace(self, paras, regex, dst):
+        """
+        在多个段落中查找和匹配，只进行一次匹配
+        """
         match = unmatch = 0
         for i, para in enumerate(paras):
             result = re.search(regex, para.text)
@@ -596,8 +608,10 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 break  # 只替换一次就够用
         return CheckR(match, unmatch)
 
-    def check_replace_all(self, para, dst):
-        """检查和替换掉所有内容"""
+    def check_replace_para(self, para, dst):
+        """
+        检查和替换掉所传入的 para
+        """
         match = unmatch = 0
         if para.text != dst:
             unmatch = unmatch + 1
@@ -610,17 +624,44 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             match = match + 1
         return CheckR(match, unmatch)
 
+    def check_replace_paras(self, paras, dst):
+        """
+        检查和替换掉所传入的 paras 对象，确保整体内容匹配
+
+        TOTO:表格中传入的paras对象实际为复制的对象，无法修改原有对象，后续看有没有改进
+        """
+        match = unmatch = 0
+        org_text = ""
+        for i, para in enumerate(paras):
+            org_text +=  para.text
+        if org_text.replace("\n","") != dst.replace("\n",""):
+            unmatch = unmatch + 1
+            self.textEdit.append(org_text + ' ===> ' + dst)
+
+            # 临时方案, 修改 paras对象无法传出，后续看是否有其它方案
+            for i, para in enumerate(paras):
+                for j, run in enumerate(para.runs):
+                    run.clear()
+
+            if len(paras[0].runs) == 0:
+                paras[0].add_run('dst')
+            else:
+                paras[0].runs[0].text = dst
+            self.clear_paras(paras)
+            self.clear_runs(paras[0].runs)
+        else:
+            match = match + 1
+        return CheckR(match, unmatch)
+
     def third_table(self, doc, prj):
         """
         项目验收报告
         """
-        checkr = self.check_replace_all(doc.tables[2].rows[0].cells[1].paragraphs[0], prj.p_name)
-        checkr = checkr + self.check_replace(doc.tables[2].rows[1].cells[1].paragraphs,
-                                             r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}', prj.p_end)
-        checkr = checkr + self.check_replace(doc.tables[2].rows[2].cells[1].paragraphs,
-                                             r'\d{2,4}[-/]\d{1,2}[-/]\d{1,2}至\d{2,4}[-/]\d{1,2}[-/]\d{1,2}',
+        checkr = self.check_replace_para(doc.tables[2].rows[0].cells[1].paragraphs[0], prj.p_name)
+        checkr = checkr + self.check_replace_para(doc.tables[2].rows[1].cells[1].paragraphs[0], prj.p_end)
+        checkr = checkr + self.check_replace_para(doc.tables[2].rows[2].cells[1].paragraphs[0],
                                              prj.p_start + '至' + prj.p_end)
-        checkr = checkr + self.check_replace_all(doc.tables[2].rows[3].cells[1].paragraphs[0], prj.p_owner)
+        checkr = checkr + self.check_replace_para(doc.tables[2].rows[3].cells[1].paragraphs[0], prj.p_owner)
         return checkr
 
     def get_prj_init(self, project):
