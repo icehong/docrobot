@@ -15,7 +15,7 @@ from docx.opc.exceptions import PackageNotFoundError
 from openpyxl.reader.excel import load_workbook
 from win32com.client import DispatchEx
 
-from docrobot.form import Ui_MainWindow
+from form import Ui_MainWindow
 
 
 class Project(object):
@@ -31,6 +31,7 @@ class Project(object):
     p_money = ''  # 总预算
     pat_list = ''  # 知识产权名称
     ip_list = ''  # IP
+    p_product = ''  # PS
 
 
 class Patent(object):
@@ -40,7 +41,6 @@ class Patent(object):
     p_no = ''  # 专利/登记号
     p_got = ''  # 获得方式
     p_date = ''  # 授权日期
-
 
 class CheckR(object):
     """文档检查结果"""
@@ -87,6 +87,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
     pat_dict = {}  # 专利名字->序号字典   TODO 合并到dict2里面去
     pat_dict2 = {}  # 专利名字->专利对象字典
     arr_prj = []  # 项目数组
+    com_name = ''
 
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -140,14 +141,14 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 self.file_prj = self.workdir + '/' + file_sum
             if file_sum.endswith('知识产权汇总表.xlsx') and not file_sum.startswith('~$'):
                 self.file_pat = self.workdir + '/' + file_sum
-            if file_sum.endswith('知识产权表_上传.xlsx') and not file_sum.startswith('~$'):
+            if file_sum.endswith('1.知识产权表（参与本次创新能力知识产权评价，汇总信息只统计此列表中的知识产权.xlsx') and not file_sum.startswith('~$'):
                 self.file_pat_upload = self.workdir + '/' + file_sum
         if self.file_prj == '':
             self.textEdit.append('没找到：' + '立项报告汇总表.xlsx')
         if self.file_pat == '':
             self.textEdit.append('没找到：' + '知识产权汇总表.xlsx')
         if self.file_pat_upload == '':
-            self.textEdit.append('没找到：' + '知识产权表_上传.xlsx')
+            self.textEdit.append('没找到：' + '1.知识产权表（参与本次创新能力知识产权评价，汇总信息只统计此列表中的知识产权.xlsx')
         # self.update_data()
 
     def replaceprj(self, modify=False):
@@ -302,9 +303,11 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         return CheckR(match, unmatch)
 
     def update_data(self):
+        self.com_name = ''
         self.pat_list.clear()
         self.pat_dict.clear()
         self.pat_dict2.clear()
+
         with open(self.file_pat, "rb") as f:
             in_mem_file = io.BytesIO(f.read())
         wb = load_workbook(in_mem_file, read_only=True, data_only=True)
@@ -322,6 +325,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 pat.p_no = str(r[3].value).strip()
                 pat.p_date = format_date(r[4].value, pat.p_order)
                 pat.p_got = str(r[5].value).strip()
+
                 self.pat_list.append(pat)
                 self.pat_dict[pat.p_name] = pat.p_order
                 self.pat_dict2[pat.p_name] = pat
@@ -330,14 +334,13 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         wb.close()
 
         self.arr_prj.clear()
-        com_name = 'XX公司'
         with open(self.file_prj, "rb") as f:
             in_mem_file = io.BytesIO(f.read())
         wb = load_workbook(in_mem_file, read_only=True, data_only=True)
         ws = wb.active
         if ws is not None:
             if str(ws['A1'].value).find(u'公司') != -1:
-                com_name = str(ws['A1'].value).split("公司")[0] + '公司'
+                self.com_name = str(ws['A1'].value).split("公司")[0] + '公司'
             else:
                 self.textEdit.append("Error: 找不到 公司名")
             max_row_num = ws.max_row
@@ -346,7 +349,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 if r[0].value is None:
                     break
                 project = Project()
-                project.p_comname = com_name
+                project.p_comname = self.com_name
                 project.p_order = str(r[0].value).strip().zfill(2)
                 project.p_name = str(r[1].value).strip()  # 项目名称
                 project.p_start = format_date(r[2].value, project.p_order)
@@ -358,6 +361,8 @@ class MainWindow(Ui_MainWindow, QMainWindow):
                 project.p_money = str(r[9].value).strip()  # 总预算
                 project.pat_list = str(r[11].value).strip()  # 知识产权名称
                 project.ip_list = str(r[14].value).strip()  # IP
+                rst = re.findall(r"(PS[0-9][0-9])：.*", str(r[15].value).strip())
+                project.p_product = ','.join(rst)
                 self.arr_prj.append(project)
         else:
             self.textEdit.append('Error ' + self.file_prj + ' 文件格式错误。')
@@ -629,6 +634,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         检查和替换掉所传入的 paras 对象，确保整体内容匹配
 
         TOTO:表格中传入的paras对象实际为复制的对象，无法修改原有对象，后续看有没有改进
+        https://github.com/python-openxml/python-docx/issues/33
         """
         match = unmatch = 0
         org_text = ""
@@ -684,13 +690,17 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             for i, para in enumerate(paras):
                 tmp2 = tmp2 + para.text
             tmp2 = tmp2.split("1、取得的阶段性成果", 1)[1]
-            tmp2 = tmp2.split("2、成效", 1)[0]
+            tmpcg_tmp= tmp2.split("。", 1)[0] + "。"
+            'tmpcg = tmp2.split("2、成效", 1)[0]'
+            tmp2 = tmp2.split("2、成效", 1)[1]
+            tmpcx = tmp2.split("3、项目验收情况", 1)[0]
+            tmpcg = tmpcg_tmp + tmpcx
             rst = True
         except PackageNotFoundError:
             self.textEdit.append('Error打开文件错误：' + doc_name)
         except PermissionError:
             self.textEdit.append('Error 保存文件错误，可能是文件已被打开：' + doc_name)
-        return rst, tmp1, tmp2
+        return rst, tmp1, tmpcg, tmpcx
 
     def get_prj_core(self, project):
         """
@@ -702,18 +712,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             doc = Document(doc_name)
             paras = doc.tables[1].rows[2].cells[1].paragraphs
             for i, para in enumerate(paras):
-                tmp = tmp + para.text
-            rst = re.search(r"1、核心技术(.*)2、创新点(.*)", tmp, re.S)
+                tmp = tmp + para.text + '\n'
+            rst = re.search(r"1、核心技术\n(.*)2、创新点\n(.*)", tmp, re.S | re.M)
             if rst is not None:
-                return True, rst.group(1), rst.group(2)
+                return True, rst.group(1), rst.group(2), tmp
             else:
                 self.textEdit.append(doc_name + ': 没有找到 核心技术 or 创新点')
-                return False, '', ''
+                return False, '', '',''
         except PackageNotFoundError:
             self.textEdit.append('Error打开文件错误：' + doc_name)
         except PermissionError:
             self.textEdit.append('Error 保存文件错误，可能是文件已被打开：' + doc_name)
-        return False, '', ''
+        return False, '', '', ''
 
     def prepare_pat_table(self):
         """
@@ -732,12 +742,12 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             ws.cell(row, column=4, value=pat.p_got)
             ws.cell(row, column=5, value=pat.p_no)
             ws.cell(row, column=6, value=pat.p_date)
-            ws.cell(row, column=7, value="单位")
+            ws.cell(row, column=7, value=self.com_name)
             tmp1 = tmp2 = ''
             rst = False
             for prj in self.arr_prj:
                 if ("IP" + pat.p_order) in prj.ip_list:
-                    rst, tmp1, tmp2 = self.get_prj_core(prj)
+                    rst, tmp1, tmp2, tmp3 = self.get_prj_core(prj)
                     if rst:
                         ws.cell(row, column=9, value=tmp1)
                         ws.cell(row, column=10, value=tmp2)
@@ -757,7 +767,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         """
         self.textEdit.setText('')
         self.update_data()
-        filename = '企业研究开发活动汇总表（近三年执行的活动）.xlsx'
+        filename = '2.企业研究开发活动汇总表（近三年执行的活动）.xlsx'
         file_rd_summary = self.workdir + '/' + filename
         if not os.path.exists(file_rd_summary):
             self.textEdit.append('文件不存在.' + filename)
@@ -780,13 +790,18 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             ws.cell(row, column=9, value=prj.ip_list)
             ws.cell(row, column=10, value=prj.p_money)
             ws.cell(row, column=15, value=prj.p_people)
-            rst, tmp1, tmp2 = self.get_prj_init(prj)
+            ws.cell(row, column=22, value=prj.p_product)
+            rst, tmp1, tmp2, tmpcx  = self.get_prj_init(prj)
             if rst:
                 ws.cell(row, column=16, value=tmp1)
                 ws.cell(row, column=18, value=tmp2)
-            rst, tmp1, tmp2 = self.get_prj_core(prj)
+                ws.cell(row, column=21, value=tmpcx)
+
+            rst, tmp1, tmp2, tmp = self.get_prj_core(prj)
             if rst:
-                ws.cell(row, column=17, value=tmp1 + tmp2)
+                ws.cell(row, column=17, value=tmp)
+                ws.cell(row, column=19, value=tmp1)
+                ws.cell(row, column=20, value=tmp2)
             row = row + 1
         try:
             wb.save(file_rd_summary)
