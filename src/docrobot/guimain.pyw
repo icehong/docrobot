@@ -675,7 +675,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
         获取项目 立项目的、意义及组织实施方式//核心技术及创新点//取得的阶段性成果
         """
         rst = False
-        tmp1 = tmp2 = doc_name = ''
+        tmp1 = tmp2 = doc_name = tmpcg = tmpcx = ''
         try:
             doc_name = self.workdir + '/RD' + project.p_order + '_' + project.p_name + '.docx'
             doc = Document(doc_name)
@@ -743,8 +743,6 @@ class MainWindow(Ui_MainWindow, QMainWindow):
             ws.cell(row, column=5, value=pat.p_no)
             ws.cell(row, column=6, value=pat.p_date)
             ws.cell(row, column=7, value=self.com_name)
-            tmp1 = tmp2 = ''
-            rst = False
             for prj in self.arr_prj:
                 if ("IP" + pat.p_order) in prj.ip_list:
                     rst, tmp1, tmp2, tmp3 = self.get_prj_core(prj)
@@ -799,6 +797,7 @@ class MainWindow(Ui_MainWindow, QMainWindow):
 
             rst, tmp1, tmp2, tmp = self.get_prj_core(prj)
             if rst:
+                #ws.cell(row, column=17, value=tmp1 + tmp2)
                 ws.cell(row, column=17, value=tmp)
                 ws.cell(row, column=19, value=tmp1)
                 ws.cell(row, column=20, value=tmp2)
